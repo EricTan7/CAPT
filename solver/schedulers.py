@@ -124,7 +124,7 @@ def build_scheduler(optimizer, optim_cfg):
 
     elif lr_scheduler == "cosine":
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, int(max_epoch)
+            optimizer, int(max_epoch*2)
         )
 
     if optim_cfg.WARMUP_EPOCH > 0:

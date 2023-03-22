@@ -21,17 +21,17 @@ from datasets.ucf101 import UCF101
 
 
 FACTORY = {
-    'Caltech101': Caltech101
-    # 'DescribableTextures': DescribableTextures,
-    # 'EuroSAT': EuroSAT,
-    # 'FGVCAircraft': FGVCAircraft,
-    # 'Food101': Food101,
-    # 'ImageNet': ImageNet,
-    # 'OxfordFlowers': OxfordFlowers,
-    # 'OxfordPets': OxfordPets,
-    # 'StanfordCars': StanfordCars,
-    # 'SUN397': SUN397,
-    # 'UCF101': UCF101
+    'Caltech101': Caltech101,
+    'DescribableTextures': DescribableTextures,
+    'EuroSAT': EuroSAT,
+    'FGVCAircraft': FGVCAircraft,
+    'Food101': Food101,
+    'ImageNet': ImageNet,
+    'OxfordFlowers': OxfordFlowers,
+    'OxfordPets': OxfordPets,
+    'StanfordCars': StanfordCars,
+    'SUN397': SUN397,
+    'UCF101': UCF101
 }
 
 # output = {

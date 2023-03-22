@@ -3,12 +3,21 @@ import logging
 import torch
 import torch.distributed as dist
 
+# from dassl.utils import setup_logger, set_random_seed, collect_env_info
+# from dassl.config import get_cfg_default
+# from dassl.engine import build_trainer
+
 from models import Baseline, lpclip
 from configs import get_cfg_default
 from datasets import DataManager
-from processor import train
+from processor import train, train_sweep
 from tools.utils import set_random_seed, collect_env_info
 from tools.logger import setup_logger
+
+import wandb
+import warnings
+warnings.filterwarnings("ignore")
+
 
 
 def print_args(args, cfg):
@@ -16,10 +25,10 @@ def print_args(args, cfg):
     logger.info("***************")
     logger.info("** Arguments **")
     logger.info("***************")
-    optkeys = list(args.__dict__.keys())
+    optkeys = list(args.keys())
     optkeys.sort()
     for key in optkeys:
-        logger.info("{}: {}".format(key, args.__dict__[key]))
+        logger.info("{}: {}".format(key, args[key]))
     logger.info("************")
     logger.info("** Config **")
     logger.info("************")
@@ -27,38 +36,38 @@ def print_args(args, cfg):
 
 
 def reset_cfg(cfg, args):
-    if args.root:
-        cfg.DATASET.ROOT = args.root
+    if args['root']:
+        cfg.DATASET.ROOT = args['root']
 
-    if args.output_dir:
-        cfg.OUTPUT_DIR = args.output_dir
+    if args['output_dir']:
+        cfg.OUTPUT_DIR = args['output_dir']
 
-    if args.resume:
-        cfg.RESUME = args.resume
+    if args['resume']:
+        cfg.RESUME = args['resume']
 
-    if args.seed:
-        cfg.SEED = args.seed
+    if args['seed']:
+        cfg.SEED = args['seed']
 
-    if args.source_domains:
-        cfg.DATASET.SOURCE_DOMAINS = args.source_domains
+    if args['source_domains']:
+        cfg.DATASET.SOURCE_DOMAINS = args['source_domains']
 
-    if args.target_domains:
-        cfg.DATASET.TARGET_DOMAINS = args.target_domains
+    if args['target_domains']:
+        cfg.DATASET.TARGET_DOMAINS = args['target_domains']
 
-    if args.transforms:
-        cfg.INPUT.TRANSFORMS = args.transforms
+    if args['transforms']:
+        cfg.INPUT.TRANSFORMS = args['transforms']
 
     # if args.trainer:
     #     cfg.TRAINER.NAME = args.trainer
 
-    if args.backbone:
-        cfg.MODEL.BACKBONE.NAME = args.backbone
+    if args['backbone']:
+        cfg.MODEL.BACKBONE.NAME = args['backbone']
 
-    if args.head:
-        cfg.MODEL.HEAD.NAME = args.head
+    if args['head']:
+        cfg.MODEL.HEAD.NAME = args['head']
 
-    if args.dist_train:
-        cfg.TRAIN.DIST_TRAIN = args.dist_train
+    if args['dist_train']:
+        cfg.TRAIN.DIST_TRAIN = args['dist_train']
 
 
 def extend_cfg(cfg):
@@ -102,65 +111,73 @@ def setup_cfg(args):
     extend_cfg(cfg)
 
     # 1. From the dataset config file
-    if args.dataset_config_file:
-        cfg.merge_from_file(args.dataset_config_file)
+    if args['dataset_config_file']:
+        cfg.merge_from_file(args['dataset_config_file'])
 
     # 2. From the method config file
-    if args.config_file:
-        cfg.merge_from_file(args.config_file)
+    if args['config_file']:
+        cfg.merge_from_file(args['config_file'])
 
     # 3. From input arguments
     reset_cfg(cfg, args)
 
     # 4. From optional input arguments
-    cfg.merge_from_list(args.opts)
+    cfg.merge_from_list(args['opts'])
+
+    # cfg.freeze()
 
     return cfg
 
 
-def main(args):
-    cfg = setup_cfg(args)
-    logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
+def main(config=None):
+    with wandb.init(config=config):
+        config = wandb.config
+        args = config.args
 
-    if cfg.SEED >= 0:
-        logger.info("Setting fixed seed: {}".format(cfg.SEED))
-        set_random_seed(cfg.SEED)
+        cfg = setup_cfg(args)
 
-    if torch.cuda.is_available() and cfg.USE_CUDA:
-        torch.backends.cudnn.benchmark = True
+        logger = logging.getLogger(cfg.TRAINER.NAME)
+        # update cfg with sweep config
+        cfg.OPTIM.NAME = wandb.config.optim
+        cfg.OPTIM.LR = wandb.config.lr
+        cfg.OPTIM.WARMUP_CONS_LR = wandb.config.warmup_lr
+        cfg.OPTIM.MAX_EPOCH = wandb.config.epoch
+        cfg.OPTIM.WEIGHT_DECAY = wandb.config.weight_decay
+        cfg.freeze()
 
-    if cfg.TRAIN.DIST_TRAIN:
-        torch.cuda.set_device(args.local_rank)
-        dist.init_process_group(backend='nccl', init_method='env://')
+        if cfg.SEED >= 0:
+            logger.info("Setting fixed seed: {}".format(cfg.SEED))
+            set_random_seed(cfg.SEED)
 
-    if cfg.TRAIN.DIST_TRAIN and dist.get_rank() != 0:
-        pass
-    else:
-        print_args(args, cfg)
-        logger.info("Collecting env info ...")
-        logger.info("** System info **\n{}\n".format(collect_env_info()))
+        if torch.cuda.is_available() and cfg.USE_CUDA:
+            torch.backends.cudnn.benchmark = True
 
-    # 1.dataset
-    data = DataManager(cfg)
+        if cfg.TRAIN.DIST_TRAIN:
+            torch.cuda.set_device(args['local_rank'])
+            dist.init_process_group(backend='nccl', init_method='env://')
 
-    # 2.model ( +optim +sche)
-    if cfg.TRAINER.NAME == 'baseline':
-        model = Baseline(cfg, data.dataset.classnames)
-    elif cfg.TRAINER.NAME == 'lpclip':
-        model = lpclip(cfg, data.dataset.classnames)
-    else:
-        raise TypeError(f"Trainer {cfg.TRAINER.NAME} is not available.")
+        if cfg.TRAIN.DIST_TRAIN and dist.get_rank() != 0:
+            pass
+        else:
+            print_args(args, cfg)
+            logger.info("Collecting env info ...")
+            logger.info("** System info **\n{}\n".format(collect_env_info()))
 
-    # 3.train
-    train(cfg, model, data, args.local_rank)
+        # 1.dataset
+        data = DataManager(cfg)
 
-    # if args.eval_only:
-    #     trainer.load_model(args.model_dir, epoch=args.load_epoch)
-    #     trainer.test()
-    #     return
+        # 2.model ( +optim +sche)
+        if cfg.TRAINER.NAME == 'baseline':
+            model = Baseline(cfg, data.dataset.classnames)
+        elif cfg.TRAINER.NAME == 'lpclip':
+            model = lpclip(cfg, data.dataset.classnames)
+        else:
+            raise TypeError(f"Trainer {cfg.TRAINER.NAME} is not available.")
 
-    # if not args.no_train:
-    #     trainer.train()
+        # 3.train
+        train_sweep(cfg, model, data, args['local_rank'])
+
+    wandb.finish()
 
 
 if __name__ == "__main__":
@@ -221,4 +238,36 @@ if __name__ == "__main__":
         help="modify config options using the command-line",
     )
     args = parser.parse_args()
-    main(args)
+    logger = setup_logger('baseline', args.output_dir, if_train=True)    # todo: modify manually
+
+
+    # Define the search space
+    sweep_configuration = {
+        'method': 'grid',
+        'metric': {'goal': 'maximize', 'name': 'test acc'},
+        'parameters':
+            {
+                # use 'values' for sweeping, 'value' for fixed
+                'optim': {'value': 'adamw'},
+                'lr': {'values': [0.004, 0.002, 0.001]},
+                # 'lr': {'values': [0.1, 0.01]},
+                'weight_decay': {'value': 5e-4},
+                'warmup_lr': {'value': 1e-5},
+                'epoch': {'value': 50},
+                'args': {'value': args}
+            }
+    }
+
+    sweep_id = wandb.sweep(sweep=sweep_configuration, project='baseline')
+
+    # run = wandb.init()
+    # run.name = f'test-1'
+    # run = wandb.init(project='TransPAR-SaAttGCNTrans-v2-std', reinit=True)
+    # run.name = f'18-peta-softmax-mask'
+    # from pprint import pprint
+    #
+    # pprint(wandb.config)
+    # dic = vars(args)
+    # wandb.config.args = dic
+
+    wandb.agent(sweep_id, function=main, count=3)

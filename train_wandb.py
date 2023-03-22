@@ -6,9 +6,13 @@ import torch.distributed as dist
 from models import Baseline, lpclip
 from configs import get_cfg_default
 from datasets import DataManager
-from processor import train
+from processor import train, train_wandb
 from tools.utils import set_random_seed, collect_env_info
 from tools.logger import setup_logger
+
+import wandb
+import warnings
+warnings.filterwarnings("ignore")
 
 
 def print_args(args, cfg):
@@ -122,6 +126,11 @@ def main(args):
     cfg = setup_cfg(args)
     logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
 
+    run = wandb.init(project='baseline')
+    run.name = cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}shots-supp'
+    # run = wandb.init(project='TransPAR-SaAttGCNTrans-v2-std', reinit=True)
+    # run.name = f'18-peta-softmax-mask'
+
     if cfg.SEED >= 0:
         logger.info("Setting fixed seed: {}".format(cfg.SEED))
         set_random_seed(cfg.SEED)
@@ -152,15 +161,7 @@ def main(args):
         raise TypeError(f"Trainer {cfg.TRAINER.NAME} is not available.")
 
     # 3.train
-    train(cfg, model, data, args.local_rank)
-
-    # if args.eval_only:
-    #     trainer.load_model(args.model_dir, epoch=args.load_epoch)
-    #     trainer.test()
-    #     return
-
-    # if not args.no_train:
-    #     trainer.train()
+    train_wandb(cfg, model, data, args.local_rank)
 
 
 if __name__ == "__main__":

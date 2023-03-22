@@ -88,6 +88,7 @@ def build_optimizer(model, optim_cfg, param_groups=None):
             lr=lr,
             weight_decay=weight_decay,
             betas=(adam_beta1, adam_beta2),
+            eps=1e-7
         )
     else:
         raise NotImplementedError(f"Optimizer {optim} not implemented yet!")

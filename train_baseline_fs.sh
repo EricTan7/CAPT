@@ -21,16 +21,40 @@ CUDA_VISIBLE_DEVICES=6 bash scripts/baseline/main.sh caltech101 rn50_ep50 4 16 c
 CUDA_VISIBLE_DEVICES=6 bash scripts/baseline/main.sh caltech101 vit_b16_ep10_batch32 4 16 cat 1e-1 5e-3 32 50
 
 
-CUDA_VISIBLE_DEVICES=5,7 python -m torch.distributed.launch --nproc_per_node=2 --master_port 12315 train.py \
+CUDA_VISIBLE_DEVICES=3,4,5,7 python -m torch.distributed.launch --nproc_per_node=4 --master_port 12315 train.py \
 --root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline/debug/ \
---dataset-config-file configs/datasets/caltech101.yaml \
---config-file configs/trainers/Baseline/vit_b16_ep10_batch32.yaml  \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline/rn50_ep50_batch32.yaml  \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.N_CTX 4 TRAINER.BASELINE.FUSE cat TRAIN.DIST_TRAIN True DATALOADER.TRAIN_X.BATCH_SIZE 128
+
+CUDA_VISIBLE_DEVICES=6,7 python -m torch.distributed.launch --nproc_per_node=2 --master_port 12315 train.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline/debug/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline/rn50_ep50_batch32.yaml  \
 DATASET.NUM_SHOTS 16 TRAINER.BASELINE.N_CTX 4 TRAINER.BASELINE.FUSE cat TRAIN.DIST_TRAIN True DATALOADER.TRAIN_X.BATCH_SIZE 64
 
 
 CUDA_VISIBLE_DEVICES=7 python train.py \
---root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline/debug/ \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline/rn50_ep50_batch32.yaml \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.N_CTX 4 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 20
+
+
+CUDA_VISIBLE_DEVICES=7 python train_sweep_hyper.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline/sweep_hyper/ --dataset-config-file configs/datasets/caltech101.yaml --config-file configs/trainers/Baseline/rn50_ep50_batch32.yaml DATASET.NUM_SHOTS 2 TRAINER.BASELINE.N_CTX 4 TRAINER.BASELINE.FUSE cat
+TRAIN.PRINT_FREQ 20
+
+
+CUDA_VISIBLE_DEVICES=3,4,5,7 python -m torch.distributed.launch --nproc_per_node=4 --master_port 12315 train.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline/debug/ --dataset-config-file configs/datasets/imagenet.yaml --config-file configs/trainers/Baseline/rn50_ep50_batch32.yaml DATASET.NUM_SHOTS 16 TRAINER.BASELINE.N_CTX 4 TRAINER.BASELINE.FUSE cat TRAIN.DIST_TRAIN True DATALOADER.TRAIN_X.BATCH_SIZE 128
+
+
+CUDA_VISIBLE_DEVICES=7 python train_sweep_hyper.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline/sweep_hyper/ \
 --dataset-config-file configs/datasets/caltech101.yaml \
 --config-file configs/trainers/Baseline/rn50_ep50_batch32.yaml \
-DATASET.NUM_SHOTS 16 TRAINER.BASELINE.N_CTX 4 TRAINER.BASELINE.FUSE cat
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.N_CTX 4 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 20
+
+
 
