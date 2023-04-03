@@ -3,16 +3,28 @@ import logging
 import torch
 import torch.distributed as dist
 
-from models import Baseline, lpclip
+from models import Baseline, lpclip, Baseline_cattn, Baseline_cattn_vocabloss, Baseline_cattn_vocabloss_wotextloss, Baseline_cattn_vocabloss_cpvocab, Baseline_cattn_vocabloss_shembed, Baseline_cattn_vocabloss_shembed_mul
 from configs import get_cfg_default
 from datasets import DataManager
-from processor import train, train_wandb
+from processor import train, train_wandb, train_lpclip
 from tools.utils import set_random_seed, collect_env_info
 from tools.logger import setup_logger
 
 import wandb
 import warnings
 warnings.filterwarnings("ignore")
+
+
+_MODEL = {
+    'baseline': Baseline,
+    'baseline_cattn': Baseline_cattn,
+    'baseline_cattn_vocabloss': Baseline_cattn_vocabloss,
+    'baseline_cattn_vocabloss_wotextloss': Baseline_cattn_vocabloss_wotextloss,
+    'baseline_cattn_vocabloss_cpvocab': Baseline_cattn_vocabloss_cpvocab,
+    'baseline_cattn_vocabloss_shembed': Baseline_cattn_vocabloss_shembed,
+    'baseline_cattn_vocabloss_shembed_mul': Baseline_cattn_vocabloss_shembed_mul,
+    'lpclip': lpclip
+}
 
 
 def print_args(args, cfg):
@@ -94,6 +106,7 @@ def extend_cfg(cfg):
     cfg.TRAINER.BASELINE.N_CTX = 16  # number of context vectors
     cfg.TRAINER.BASELINE.CTX_INIT = ""  # initialization words
     cfg.TRAINER.BASELINE.FUSE = "cat"
+    cfg.TRAINER.BASELINE.FEA_SCALE = 1.
 
     cfg.TRAIN.TEST_FREQ = 5
     cfg.TRAIN.SAVE_FREQ = 20
@@ -126,8 +139,10 @@ def main(args):
     cfg = setup_cfg(args)
     logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
 
-    run = wandb.init(project='baseline')
-    run.name = cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}shots-supp'
+    run = wandb.init(project='baseline_cattn(_vocabloss)_sweep')
+    # run.name = cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}shots-optim{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-wd{cfg.OPTIM.WEIGHT_DECAY}-e{cfg.OPTIM.MAX_EPOCH}'
+    # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}shots'
+    run.name = 'cj-gb-era-vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
     # run = wandb.init(project='TransPAR-SaAttGCNTrans-v2-std', reinit=True)
     # run.name = f'18-peta-softmax-mask'
 
@@ -153,11 +168,14 @@ def main(args):
     data = DataManager(cfg)
 
     # 2.model ( +optim +sche)
-    if cfg.TRAINER.NAME == 'baseline':
-        model = Baseline(cfg, data.dataset.classnames)
-    elif cfg.TRAINER.NAME == 'lpclip':
-        model = lpclip(cfg, data.dataset.classnames)
-    else:
+    try:
+        if cfg.TRAINER.NAME == 'lpclip':
+            model = lpclip(cfg, data.dataset.classnames)
+            train_lpclip(cfg, model, data, args.local_rank)
+            return
+        else:
+            model = _MODEL[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
+    except:
         raise TypeError(f"Trainer {cfg.TRAINER.NAME} is not available.")
 
     # 3.train

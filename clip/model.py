@@ -99,9 +99,11 @@ class ModifiedResNet(nn.Module):
     """
 
     def __init__(self, layers, output_dim, heads, input_resolution=224, width=64):
+        # rn50: width:64,   output_dim:1024
         super().__init__()
         self.output_dim = output_dim
         self.input_resolution = input_resolution
+        self.width = width
 
         # the 3-layer stem
         self.conv1 = nn.Conv2d(3, width // 2, kernel_size=3, stride=2, padding=1, bias=False)
@@ -144,10 +146,10 @@ class ModifiedResNet(nn.Module):
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
-        x = self.layer4(x)
-        x = self.attnpool(x)
+        x = self.layer4(x)  # [B,2048,7,7]
+        cls = self.attnpool(x)    # [B,1024]
 
-        return x
+        return x, cls
 
 
 class LayerNorm(nn.LayerNorm):
@@ -201,9 +203,11 @@ class Transformer(nn.Module):
 
 class VisionTransformer(nn.Module):
     def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int):
+        # vit_b16: patch_size:16,   width:768,   output_dim:512,   layers:12,     heads:12
         super().__init__()
         self.input_resolution = input_resolution
         self.output_dim = output_dim
+        self.width = width
         self.conv1 = nn.Conv2d(in_channels=3, out_channels=width, kernel_size=patch_size, stride=patch_size, bias=False)
 
         scale = width ** -0.5
@@ -226,14 +230,16 @@ class VisionTransformer(nn.Module):
 
         x = x.permute(1, 0, 2)  # NLD -> LND
         x = self.transformer(x)
-        x = x.permute(1, 0, 2)  # LND -> NLD
+        x = x.permute(1, 0, 2)  # LND -> NLD    # [B, 197, 768]
 
-        x = self.ln_post(x[:, 0, :])
+        # x = self.ln_post(x[:, 0, :])
+        cls = self.ln_post(x[:, 0, :])
 
-        if self.proj is not None:
+        if self.proj is not None:   # [768, 512]
             x = x @ self.proj
+            cls = cls @ self.proj
 
-        return x
+        return x, cls   # [B,197,512]  [B,512]
 
 
 class CLIP(nn.Module):
@@ -282,7 +288,9 @@ class CLIP(nn.Module):
             attn_mask=self.build_attention_mask()
         )
 
+        self.embed_dim = embed_dim
         self.vocab_size = vocab_size
+        self.transformer_width = transformer_width
         self.token_embedding = nn.Embedding(vocab_size, transformer_width)
         self.positional_embedding = nn.Parameter(torch.empty(self.context_length, transformer_width))
         self.ln_final = LayerNorm(transformer_width)

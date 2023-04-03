@@ -1,2 +1,5 @@
 from .baseline import Baseline
 from .lpclip import lpclip
+from .baseline_ic import Baseline_ic
+from .baseline_cattn import Baseline_cattn
+from .baseline_cattn_vocabloss import Baseline_cattn_vocabloss, Baseline_cattn_vocabloss_wotextloss, Baseline_cattn_vocabloss_cpvocab, Baseline_cattn_vocabloss_shembed,Baseline_cattn_vocabloss_shembed_mul

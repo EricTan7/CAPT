@@ -1,7 +1,7 @@
 from torchvision.transforms import (
     Resize, Compose, ToTensor, Normalize, CenterCrop, RandomCrop, ColorJitter,
     RandomApply, GaussianBlur, RandomGrayscale, RandomResizedCrop,
-    RandomHorizontalFlip
+    RandomHorizontalFlip, RandomErasing
 )
 from torchvision.transforms.functional import InterpolationMode
 
@@ -15,6 +15,7 @@ AVAI_CHOICES = [
     "colorjitter",
     "randomgrayscale",
     "gaussian_blur",
+    "randomerasing"
 ]
 
 INTERPOLATION_MODES = {
@@ -120,6 +121,10 @@ def _build_transform_train(cfg, choices, target_size, normalize):
             f"+ normalization (mean={cfg.INPUT.PIXEL_MEAN}, std={cfg.INPUT.PIXEL_STD})"
         )
         tfm_train += [normalize]
+
+    if "randomerasing" in choices:
+        print("+ random erasing")
+        tfm_train += [RandomErasing()]
 
     tfm_train = Compose(tfm_train)
 

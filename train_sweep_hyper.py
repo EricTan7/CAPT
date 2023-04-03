@@ -7,7 +7,7 @@ import torch.distributed as dist
 # from dassl.config import get_cfg_default
 # from dassl.engine import build_trainer
 
-from models import Baseline, lpclip
+from models import Baseline, lpclip, Baseline_cattn, Baseline_cattn_vocabloss, Baseline_cattn_vocabloss_wotextloss, Baseline_cattn_vocabloss_cpvocab, Baseline_cattn_vocabloss_shembed, Baseline_cattn_vocabloss_shembed_mul
 from configs import get_cfg_default
 from datasets import DataManager
 from processor import train, train_sweep
@@ -18,6 +18,17 @@ import wandb
 import warnings
 warnings.filterwarnings("ignore")
 
+
+_MODEL = {
+    'baseline': Baseline,
+    'baseline_cattn': Baseline_cattn,
+    'baseline_cattn_vocabloss': Baseline_cattn_vocabloss,
+    'baseline_cattn_vocabloss_wotextloss': Baseline_cattn_vocabloss_wotextloss,
+    'baseline_cattn_vocabloss_cpvocab': Baseline_cattn_vocabloss_cpvocab,
+    'baseline_cattn_vocabloss_shembed': Baseline_cattn_vocabloss_shembed,
+    'baseline_cattn_vocabloss_shembed_mul': Baseline_cattn_vocabloss_shembed_mul,
+    'lpclip': lpclip
+}
 
 
 def print_args(args, cfg):
@@ -99,6 +110,8 @@ def extend_cfg(cfg):
     cfg.TRAINER.BASELINE.N_CTX = 16  # number of context vectors
     cfg.TRAINER.BASELINE.CTX_INIT = ""  # initialization words
     cfg.TRAINER.BASELINE.FUSE = "cat"
+    cfg.TRAINER.BASELINE.FEA_SCALE = 1.
+    cfg.TRAINER.BASELINE.LOG_SCALE = 1.
 
     cfg.TRAIN.TEST_FREQ = 5
     cfg.TRAIN.SAVE_FREQ = 20
@@ -131,6 +144,7 @@ def setup_cfg(args):
 
 def main(config=None):
     with wandb.init(config=config):
+
         config = wandb.config
         args = config.args
 
@@ -143,7 +157,11 @@ def main(config=None):
         cfg.OPTIM.WARMUP_CONS_LR = wandb.config.warmup_lr
         cfg.OPTIM.MAX_EPOCH = wandb.config.epoch
         cfg.OPTIM.WEIGHT_DECAY = wandb.config.weight_decay
+        cfg.TRAINER.BASELINE.FEA_SCALE = wandb.config.fea_scale
+        cfg.TRAINER.BASELINE.LOG_SCALE = wandb.config.log_scale
         cfg.freeze()
+        wandb.run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-lscale{cfg.TRAINER.BASELINE.LOG_SCALE}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
+        # wandb.run.name = 'cj_gb-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}'
 
         if cfg.SEED >= 0:
             logger.info("Setting fixed seed: {}".format(cfg.SEED))
@@ -167,17 +185,14 @@ def main(config=None):
         data = DataManager(cfg)
 
         # 2.model ( +optim +sche)
-        if cfg.TRAINER.NAME == 'baseline':
-            model = Baseline(cfg, data.dataset.classnames)
-        elif cfg.TRAINER.NAME == 'lpclip':
-            model = lpclip(cfg, data.dataset.classnames)
-        else:
+        try:
+            model = _MODEL[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
+        except:
             raise TypeError(f"Trainer {cfg.TRAINER.NAME} is not available.")
 
         # 3.train
         train_sweep(cfg, model, data, args['local_rank'])
 
-    wandb.finish()
 
 
 if __name__ == "__main__":
@@ -238,8 +253,7 @@ if __name__ == "__main__":
         help="modify config options using the command-line",
     )
     args = parser.parse_args()
-    logger = setup_logger('baseline', args.output_dir, if_train=True)    # todo: modify manually
-
+    logger = setup_logger('baseline_cattn_vocabloss_shembed_mul', args.output_dir, if_train=True)    # todo: modify manually
 
     # Define the search space
     sweep_configuration = {
@@ -249,25 +263,30 @@ if __name__ == "__main__":
             {
                 # use 'values' for sweeping, 'value' for fixed
                 'optim': {'value': 'adamw'},
-                'lr': {'values': [0.004, 0.002, 0.001]},
+                # 'lr': {'values': [0.006, 0.004, 0.002]},
                 # 'lr': {'values': [0.1, 0.01]},
+                'lr': {'value': 0.001},
                 'weight_decay': {'value': 5e-4},
                 'warmup_lr': {'value': 1e-5},
+                # 'epoch': {'values': [50, 200]},
                 'epoch': {'value': 50},
+                # 'fea_scale': {'values': [64, 32, 16, 4]},
+                'fea_scale': {'value': 1},
+                'log_scale': {'values': [100, 64, 32, 16, 4]},
                 'args': {'value': args}
             }
     }
 
-    sweep_id = wandb.sweep(sweep=sweep_configuration, project='baseline')
+    sweep_id = wandb.sweep(sweep=sweep_configuration, project='baseline_cattn(_vocabloss)_sweep')
 
     # run = wandb.init()
     # run.name = f'test-1'
     # run = wandb.init(project='TransPAR-SaAttGCNTrans-v2-std', reinit=True)
     # run.name = f'18-peta-softmax-mask'
-    # from pprint import pprint
+    # from pprint import pprint\\\
     #
     # pprint(wandb.config)
     # dic = vars(args)
     # wandb.config.args = dic
 
-    wandb.agent(sweep_id, function=main, count=3)
+    wandb.agent(sweep_id, function=main, count=5)

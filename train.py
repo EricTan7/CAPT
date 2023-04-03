@@ -3,12 +3,24 @@ import logging
 import torch
 import torch.distributed as dist
 
-from models import Baseline, lpclip
+from models import Baseline, lpclip, Baseline_cattn, Baseline_cattn_vocabloss, Baseline_cattn_vocabloss_wotextloss, Baseline_cattn_vocabloss_cpvocab, Baseline_cattn_vocabloss_shembed, Baseline_cattn_vocabloss_shembed_mul
 from configs import get_cfg_default
 from datasets import DataManager
 from processor import train
 from tools.utils import set_random_seed, collect_env_info
 from tools.logger import setup_logger
+
+
+_MODEL = {
+    'baseline': Baseline,
+    'baseline_cattn': Baseline_cattn,
+    'baseline_cattn_vocabloss': Baseline_cattn_vocabloss,
+    'baseline_cattn_vocabloss_wotextloss': Baseline_cattn_vocabloss_wotextloss,
+    'baseline_cattn_vocabloss_cpvocab': Baseline_cattn_vocabloss_cpvocab,
+    'baseline_cattn_vocabloss_shembed': Baseline_cattn_vocabloss_shembed,
+    'baseline_cattn_vocabloss_shembed_mul': Baseline_cattn_vocabloss_shembed_mul,
+    'lpclip': lpclip
+}
 
 
 def print_args(args, cfg):
@@ -144,11 +156,9 @@ def main(args):
     data = DataManager(cfg)
 
     # 2.model ( +optim +sche)
-    if cfg.TRAINER.NAME == 'baseline':
-        model = Baseline(cfg, data.dataset.classnames)
-    elif cfg.TRAINER.NAME == 'lpclip':
-        model = lpclip(cfg, data.dataset.classnames)
-    else:
+    try:
+        model = _MODEL[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
+    except:
         raise TypeError(f"Trainer {cfg.TRAINER.NAME} is not available.")
 
     # 3.train

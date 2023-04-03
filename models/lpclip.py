@@ -4,7 +4,7 @@ import torch.nn as nn
 
 from solver import build_optimizer, build_scheduler
 from .base import BaseModel
-from .heads import ClsHead_v1, ClsHead_v2
+from models.head import ClsHead_v1
 
 from clip import clip
 from clip.simple_tokenizer import SimpleTokenizer as _Tokenizer
@@ -40,11 +40,11 @@ class Linear_Probe(nn.Module):
         self.cls_head = ClsHead_v1(cfg, classnames, clip_model)
 
     def forward(self, image):  # image: [B,3,224,224]  label:[B]
-        image_features = self.image_encoder(image.type(self.dtype))  # [B,512]
+        image_features, image_cls = self.image_encoder(image.type(self.dtype))  # [B,512]
         # image_features = image_features / image_features.norm(dim=-1, keepdim=True)
         # According to new repo: no L2 norm
 
-        logits = self.cls_head(image_features)  # [B,num_cls]
+        logits = self.cls_head(image_cls)  # [B,num_cls]
 
         return logits
 
@@ -92,5 +92,5 @@ class lpclip(BaseModel):
     def check_cfg(self, cfg):
         assert cfg.TRAINER.PREC in ["fp16", "fp32", "amp"]
 
-    def forward(self, image):
+    def forward(self, image, label=None):
         return self.model(image)     # logits

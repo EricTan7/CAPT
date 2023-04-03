@@ -146,10 +146,10 @@ class PromptLearner(nn.Module):
         prefix = self.token_prefix   # [50,1,512]
         suffix = self.token_suffix   # [50,72,512]  suffix contain padding tokens
         ctx = self.ctx                     # (n_ctx, ctx_dim) [4,512]
-        bias = self.meta_net(im_features)  # (batch, ctx_dim) [1,512]
-        bias = bias.unsqueeze(1)           # (batch, 1, ctx_dim) [1,1,512]    per image, 100 images in total
+        bias = self.meta_net(im_features)  # (batch, ctx_dim) [B,512]
+        bias = bias.unsqueeze(1)           # (batch, 1, ctx_dim) [B,1,512]    per image, 100 images in total
         ctx = ctx.unsqueeze(0)             # (1, n_ctx, ctx_dim) [1,4,512]      shared for all images
-        ctx_shifted = ctx + bias           # (batch, n_ctx, ctx_dim) [1,4,512]
+        ctx_shifted = ctx + bias           # (batch, n_ctx, ctx_dim) [B,4,512]
         
         # Use instance-conditioned context tokens for all classes
         prompts = []

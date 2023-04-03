@@ -82,7 +82,7 @@ class BaseModel(nn.Module):
             save_checkpoint(
                 {
                     "state_dict": model_dict,
-                    "epoch": epoch + 1,
+                    "epoch": epoch,
                     "optimizer": optim_dict,
                     "scheduler": sched_dict,
                     "val_result": val_result
