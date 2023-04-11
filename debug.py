@@ -1,5 +1,5 @@
-import torch
-import torch.nn as nn
+# import torch
+# import torch.nn as nn
 
 # from torch.optim.lr_scheduler import _LRScheduler
 #
@@ -109,9 +109,17 @@ import torch.nn as nn
 # b = a.view(-1)
 # c = 1
 
-from clip.simple_tokenizer import MySimpleTokenizer
+# from clip.simple_tokenizer import MySimpleTokenizer
+#
+# classnames = ['dog', 'cat', 'tench', 'photo', 'a', 'of', '.']
+# tokenizer = MySimpleTokenizer(classnames)
+# a = tokenizer.forward('a photo of a tench.')
+# b = 1
 
-classnames = ['dog', 'cat', 'tench', 'photo', 'a', 'of', '.']
-tokenizer = MySimpleTokenizer(classnames)
-a = tokenizer.forward('a photo of a tench.')
-b = 1
+# from clip import clip
+#
+# clip_model, _ = clip.load("RN50", jit=False)
+# clip_model.float()
+
+import os
+os.makedirs(os.path.dirname('./configs/test.txt'))

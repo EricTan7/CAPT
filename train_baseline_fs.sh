@@ -150,3 +150,103 @@ CUDA_VISIBLE_DEVICES=6 python train_wandb.py \
 --dataset-config-file configs/datasets/imagenet.yaml \
 --config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_aug.yaml \
 DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE mul TRAIN.PRINT_FREQ 20
+
+
+# zsinit
+CUDA_VISIBLE_DEVICES=7 python train_wandb.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit.yaml \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 20
+
+CUDA_VISIBLE_DEVICES=6 python train_wandb.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_fixed.yaml \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 20
+
+
+# cat + logit_scale
+CUDA_VISIBLE_DEVICES=5 python train_wandb.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_lscale.yaml \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 20
+
+
+# optimfc
+CUDA_VISIBLE_DEVICES=5 python train_wandb.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_optimfc.yaml \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 20 OPTIM.LR_FC_RATIO 0.1
+
+
+# add views
+CUDA_VISIBLE_DEVICES=7 python train_wandb.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_views.yaml \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 20 INPUT.NUM_VIEWS 2
+
+
+# embed loss
+CUDA_VISIBLE_DEVICES=6 python train_wandb.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_embedloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_embedloss/vit_b16_batch32.yaml \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 20
+
+
+# zsinit + 2x cattn
+CUDA_VISIBLE_DEVICES=6 python train_wandb.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_2xcattn.yaml \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 20
+
+CUDA_VISIBLE_DEVICES=7 python train_wandb.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_2xcattn_pe.yaml \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 20
+
+
+# zsinit + cattn + post decoder
+CUDA_VISIBLE_DEVICES=4 python train_wandb.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vl_pd/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vl_pd/vit_b16_batch32.yaml \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 20
+
+
+# zsinit + cattn + two stage
+CUDA_VISIBLE_DEVICES=5 python train_wandb.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_fixedfirst.yaml \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 20
+
+
+# zsinit + cj,gb
+CUDA_VISIBLE_DEVICES=7 python train_wandb.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_aug.yaml \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 20
+
+
+# zsinit + textaug
+# 以后用imagenet + eurosat验证
+CUDA_VISIBLE_DEVICES=7 python train_wandb.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_textaug.yaml \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 20
+
+CUDA_VISIBLE_DEVICES=6 python train_wandb.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/eurosat.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_textaug.yaml \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 3 \
+OPTIM.LR 0.002 OPTIM.MAX_EPOCH 100

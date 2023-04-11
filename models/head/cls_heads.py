@@ -2,8 +2,12 @@
 Classification head
 Separate, for the sake of multi-model unity
 """
+import sys
+sys.path.insert(0, '.')
 import torch
 import torch.nn as nn
+from clip import clip
+
 
 
 class ClsHead_v1(nn.Module):
@@ -69,6 +73,27 @@ class ClsHead_v2(nn.Module):
         return logits
 
 
+class ClsHead_v2_lscale(nn.Module):
+    def __init__(self, cfg, classnames, clip_model, bias=False):
+        super().__init__()
+        vis_dim = clip_model.visual.output_dim
+        n_cls = len(classnames)
+        self.cfg = cfg
+
+        # self.transform = nn.Linear(vis_dim*2, vis_dim, bias=bias)
+        self.sigmoid = nn.Sigmoid()
+        self.fc = nn.Linear(vis_dim*2, n_cls, bias=bias)
+
+    def forward(self, image_fea, text_fea, logit_scale):   # [B,1024] [B,1024]
+        image_fea = image_fea.float()
+        # image_fea = self.sigmoid(self.transform(image_fea))
+        fused_fea = torch.cat([image_fea, text_fea], dim=1)     # [B,2048]
+
+        logits = self.fc(fused_fea)
+        logits = logit_scale * logits
+
+        return logits
+
 class ClsHead_fea_scale(nn.Module):
     def __init__(self, cfg, classnames, clip_model, bias=False):
         super().__init__()
@@ -112,5 +137,53 @@ class ClsHead_logit_scale(nn.Module):
         # 2. classification
         logits = self.fc(fused_fea)
         logits = logit_scale * logits
+
+        return logits
+
+
+class ClsHead_sam(nn.Module):
+    def __init__(self, classnames, vis_dim, ctx_dim, bias=False):
+        super().__init__()
+        n_cls = len(classnames)
+
+        self.sigmoid = nn.Sigmoid()
+        self.fc = nn.Linear(vis_dim + ctx_dim, n_cls, bias=bias)
+
+    def forward(self, image_fea, text_fea=None):   # [B,1024] [B,1024]
+        image_fea = image_fea.float()
+        text_fea = text_fea.float()
+        fused_fea = torch.cat([image_fea, text_fea], dim=1)     # [B,2048]
+
+        logits = self.fc(fused_fea)
+
+        return logits
+
+
+class ClsHead_lpsam(nn.Module):
+    def __init__(self, classnames, vis_dim, bias=False):
+        super().__init__()
+        n_cls = len(classnames)
+
+        self.sigmoid = nn.Sigmoid()
+        self.fc = nn.Linear(vis_dim, n_cls, bias=bias)
+
+    def forward(self, image_fea):   # [B,1024] [B,1024]
+        image_fea = image_fea.float()
+
+        logits = self.fc(image_fea)
+
+        return logits
+
+
+class ClsHead_fused(nn.Module):
+    def __init__(self, cfg, classnames, clip_model, bias=False):
+        super().__init__()
+        vis_dim = clip_model.visual.output_dim
+        n_cls = len(classnames)
+
+        self.fc = nn.Linear(vis_dim*2, n_cls, bias=bias)
+
+    def forward(self, fused_fea):   # [B,1024] [B,1024]
+        logits = self.fc(fused_fea)
 
         return logits

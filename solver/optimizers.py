@@ -10,6 +10,8 @@ def build_optimizer(model, optim_cfg, param_groups=None):
 
     Args:
         model (nn.Module or list): model.
+                can be either:(1) nn.module  (2) list [nn.module, nn.module]
+                              (3) list(dict)  [{"params": params, "lr": lr}]
         optim_cfg (CfgNode): optimization config.
         param_groups: If provided, directly optimize param_groups and abandon model
     """
@@ -35,9 +37,12 @@ def build_optimizer(model, optim_cfg, param_groups=None):
         # for sub_model in model:
         #     for name, module in sub_model.named_children():
         #         params += [p for p in module.parameters()]
-        param_groups = []
-        for sub in model:
-            param_groups += sub.parameters()
+        if isinstance(model[0], dict):  # set lr for different groups
+            param_groups = model
+        else:
+            param_groups = []
+            for sub in model:
+                param_groups += sub.parameters()
     else:
         # for name, module in model.named_children():
         #     params += [p for p in module.parameters()]

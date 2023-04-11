@@ -57,14 +57,17 @@ _C.INPUT.RGS_P = 0.2
 # Gaussian blur
 _C.INPUT.GB_P = 0.5  # propability of applying this operation
 _C.INPUT.GB_K = 21  # kernel size (should be an odd number)
+# Image views
+_C.INPUT.IMG_VIEWS = 1
 
 ###########################
 # Dataset
 ###########################
 _C.DATASET = CN()
 # Directory where datasets are stored
-_C.DATASET.ROOT = ""
+_C.DATASET.ROOT = "/mnt/sdb/tanhao/recognition/"
 _C.DATASET.NAME = ""
+_C.DATASET.FEA_ROOT = "/mnt/sdb/tanhao/recognition/features/"   # the directory to save the extracted features
 # List of source/target domains' names (strings)
 # Do not apply to some datasets, which have pre-defined splits
 _C.DATASET.SOURCE_DOMAINS = ()

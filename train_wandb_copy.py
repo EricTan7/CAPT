@@ -17,7 +17,6 @@ def main(args):
     cfg = setup_cfg(args)
     logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
 
-    # run = wandb.init(project='baseline_cattn_vocabloss')
     run = wandb.init(project='baseline_cattn(_vocabloss)_sweep')
     run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
     # run = wandb.init(project='lpsam')
