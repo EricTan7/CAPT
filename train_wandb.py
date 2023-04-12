@@ -8,6 +8,7 @@ from tools.utils import set_random_seed, collect_env_info
 from tools.logger import setup_logger
 from tools.train_utils import *
 from datasets.LT.ImageNet_LT_nori import ImageNet_LT_data
+from nccl import configure_nccl
 
 import wandb
 import warnings
@@ -16,11 +17,25 @@ warnings.filterwarnings("ignore")
 
 def main(args):
     cfg = setup_cfg(args)
+    os.environ['LAUNCH_SITE']='hhd'
+    configure_nccl()
+    cfg.local_rank = int(os.environ["RANK"])
+    if 'WORLD_SIZE' in os.environ:
+        cfg.local_rank = int(os.environ["RANK"])
+        cfg.world_size = int(os.environ['WORLD_SIZE'])
+        print(f'WORLD_SIZE in environ: {cfg.world_size}')
+
+
+    if cfg.TRAIN.DIST_TRAIN:
+        dist.init_process_group(backend='nccl', init_method='env://')
+        torch.cuda.set_device(cfg.local_rank)
+    
     logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
 
     # run = wandb.init(project='baseline_cattn_vocabloss')
-    run = wandb.init(project='LT_baseline1')
-    run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
+    if dist.get_rank() == 0:
+        run = wandb.init(project='LT_baseline1')
+        run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
     # run = wandb.init(project='lpsam')
     # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s'
     # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.INPUT.NUM_VIEWS}v-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
@@ -32,9 +47,7 @@ def main(args):
     if torch.cuda.is_available() and cfg.USE_CUDA:
         torch.backends.cudnn.benchmark = True
 
-    if cfg.TRAIN.DIST_TRAIN:
-        torch.cuda.set_device(args.local_rank)
-        dist.init_process_group(backend='nccl', init_method='env://')
+
 
     if cfg.TRAIN.DIST_TRAIN and dist.get_rank() != 0:
         pass
@@ -55,11 +68,11 @@ def main(args):
 
     # 3.train
     if cfg.TRAINER.NAME in ["lpclip", "lpsam"]:
-        train_lpclip(cfg, model, data, args.local_rank)
+        train_lpclip(cfg, model, data, cfg.local_rank)
     elif cfg.TRAINER.NAME in ["baseline_cattn_vocabloss_shembed_zsinit_fixedfirst"]:
-        train_wandb_two_stage(cfg, model, data, args.local_rank)
+        train_wandb_two_stage(cfg, model, data,cfg.local_rank)
     else:
-        train_wandb(cfg, model, data, args.local_rank)
+        train_wandb(cfg, model, data, cfg.local_rank)
 
 
 if __name__ == "__main__":
@@ -74,7 +87,7 @@ if __name__ == "__main__":
     )
     parser.add_argument("--local_rank", default=0, type=int)
     parser.add_argument(
-        "--dist-train", type=bool, default=False, help="path to config file"
+        "--dist-train", type=bool, default=True, help="path to config file"
     )
     parser.add_argument(
         "--seed", type=int, default=-1, help="only positive value enables a fixed seed"

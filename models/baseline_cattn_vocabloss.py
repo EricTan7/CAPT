@@ -15,6 +15,7 @@ from clip import clip
 from clip.simple_tokenizer import SimpleTokenizer as _Tokenizer
 from clip.simple_tokenizer import MySimpleTokenizer
 from datasets.templates import get_templates
+import torch.distributed as dist
 
 _tokenizer = _Tokenizer()
 
@@ -1211,7 +1212,8 @@ class Baseline_cattn_vocabloss_shembed_zsinit(BaseModel):
         for name, param in self.model.named_parameters():
             if param.requires_grad:
                 enabled.add(name)
-        self.logger.info(f"Parameters to be updated: {enabled}")
+        if dist.get_rank() == 0:
+            self.logger.info(f"Parameters to be updated: {enabled}")
 
         # not necessary
         # if cfg.MODEL.INIT_WEIGHTS:

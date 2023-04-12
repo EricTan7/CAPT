@@ -121,7 +121,8 @@ def train(cfg, model, data, local_rank):
                         else:
                             info += [f"lr {model.get_current_lr():.4e}"]
                         info += [f"eta {eta}"]
-                        logger.info(" ".join(info))
+                        if dist.get_rank() == 0:
+                            logger.info(" ".join(info))
             # log_ppt_query, log_ppt_bonder_cattn_q, log_ppt_bonder_cattn_proj, log_ppt_bonder_sattn_qkv, log_ppt_bonder_sattn_proj, log_clshead = [], [], [], [], [], []
             #
             # log_ppt_query.append(model.model.prompt_learner.query.data.clone().detach())
@@ -227,9 +228,10 @@ def train_wandb(cfg, model, data, local_rank):
         pass
 
     if device:
-        model.to(local_rank)
+        model.cuda()
         if cfg.TRAIN.DIST_TRAIN and torch.cuda.device_count() > 1:
-            logger.info("Using {} GPUs for training".format(torch.cuda.device_count()))
+            if dist.get_rank() == 0:
+                logger.info("Using {} GPUs for training".format(torch.cuda.device_count()))
             # model, optimizer = amp.initialize(model, optimizer, opt_level="O1")
             model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
             model = nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], find_unused_parameters=True)
@@ -307,9 +309,11 @@ def train_wandb(cfg, model, data, local_rank):
                         else:
                             info += [f"lr {model.get_current_lr():.4e}"]
                         info += [f"eta {eta}"]
-                        logger.info(" ".join(info))
+                        if dist.get_rank() == 0:
+                            logger.info(" ".join(info))
 
-        wandb.log({'train loss': loss_meter.avg,
+        if dist.get_rank() == 0:
+            wandb.log({'train loss': loss_meter.avg,
                    'train acc': acc_meter.avg,
                    'train prompts loss': prompts_loss_meter.avg,
                    'epoch': epoch
@@ -345,7 +349,9 @@ def train_wandb(cfg, model, data, local_rank):
                     model.set_model_mode("test")
                     results, test_loss = test(cfg, model, data)
                     model.set_model_mode("train")
-                wandb.log({'test acc': results["accuracy"],
+                if dist.get_rank() == 0:
+                    logger.info()
+                    wandb.log({'test acc': results["accuracy"],
                            'test loss': test_loss})
 
 
@@ -608,7 +614,8 @@ def test(cfg, model, data):
     criterion = nn.CrossEntropyLoss()
     loss_meter = AverageMeter()
 
-    logger.info(f"Evaluate on the *test* set")
+    if dist.get_rank() == 0:
+        logger.info(f"Evaluate on the *test* set")
 
     for batch_idx, batch in enumerate(tqdm(data.test_loader)):
         with torch.no_grad():
@@ -627,7 +634,8 @@ def test_clip(cfg, model, data):
     criterion = nn.CrossEntropyLoss()
     loss_meter = AverageMeter()
 
-    logger.info(f"Evaluate on the *test* set")
+    if dist.get_rank() == 0:
+        logger.info(f"Evaluate on the *test* set")
 
     for batch_idx, batch in enumerate(tqdm(data.test_loader)):
         with torch.no_grad():
