@@ -350,7 +350,6 @@ def train_wandb(cfg, model, data, local_rank):
                     results, test_loss = test(cfg, model, data)
                     model.set_model_mode("train")
                 if dist.get_rank() == 0:
-                    logger.info()
                     wandb.log({'test acc': results["accuracy"],
                            'test loss': test_loss})
 
