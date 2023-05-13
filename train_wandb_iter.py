@@ -3,7 +3,7 @@ import torch
 import torch.distributed as dist
 
 from datasets import DataManager
-from processor import train_wandb, train_lpclip, train_wandb_two_stage
+from processor import train_wandb, train_lpclip, train_wandb_two_stage, train_wandb_iter, train_wandb_iter_wiseft
 from tools.utils import set_random_seed, collect_env_info
 from tools.logger import setup_logger
 from tools.train_utils import *
@@ -17,8 +17,12 @@ def main(args):
     cfg = setup_cfg(args)
     logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
 
-    run = wandb.init(project='baseline_cattn(_vocabloss)_sweep')
-    run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
+    # run = wandb.init(project='baseline_cattn_vocabloss')
+    run = wandb.init(project='baseline_ablation')
+    # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
+    run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
+        f'-{cfg.OPTIM.NAME}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
+        f'-lr{cfg.OPTIM.LR}-it{cfg.OPTIM.MAX_ITER}-warmit{cfg.OPTIM.WARMUP_ITER}'
     # run = wandb.init(project='lpsam')
     # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s'
     # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.INPUT.NUM_VIEWS}v-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
@@ -45,24 +49,27 @@ def main(args):
     data = DataManager(cfg)
 
     # 2.model ( +optim +sche)
-    try:
-        model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
-    except:
-        raise TypeError(f"Trainer {cfg.TRAINER.NAME} is not available.")
+    # try:
+    #     model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
+    # except:
+    #     raise TypeError(f"Trainer {cfg.TRAINER.NAME} is not available.")
+    model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
 
     # 3.train
     if cfg.TRAINER.NAME in ["lpclip", "lpsam"]:
         train_lpclip(cfg, model, data, args.local_rank)
     elif cfg.TRAINER.NAME in ["baseline_cattn_vocabloss_shembed_zsinit_fixedfirst"]:
         train_wandb_two_stage(cfg, model, data, args.local_rank)
+    elif "wiseft" in cfg.TRAINER.NAME:
+        train_wandb_iter_wiseft(cfg, model, data, args.local_rank)
     else:
-        train_wandb(cfg, model, data, args.local_rank)
+        train_wandb_iter(cfg, model, data, args.local_rank)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=str, default="", help="path to dataset")
-    parser.add_argument("--output-dir", type=str, default="", help="output directory")
+    parser.add_argument("--root", type=str, default="/data/run01/scz0bkt/datasets/recognition/", help="path to dataset")
+    parser.add_argument("--output-dir", type=str, default="/data/run01/scz0bkt/datasets/recognition/prompt/Baseline_cattn_vocabloss/sweep_hyper/", help="output directory")
     parser.add_argument(
         "--resume",
         type=str,
@@ -74,7 +81,7 @@ if __name__ == "__main__":
         "--dist-train", type=bool, default=False, help="path to config file"
     )
     parser.add_argument(
-        "--seed", type=int, default=-1, help="only positive value enables a fixed seed"
+        "--seed", type=int, default=1, help="only positive value enables a fixed seed"
     )
     parser.add_argument(
         "--source-domains", type=str, nargs="+", help="source domains for DA/DG"
