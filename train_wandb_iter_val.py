@@ -1,9 +1,13 @@
 import argparse
 import torch
 import torch.distributed as dist
+import os
 
-from datasets import DataManager
-from processor import train_wandb, train_lpclip, train_wandb_two_stage
+from datasets import DataManager, TensorDataset
+from torch.utils.data import DataLoader
+from processor import train_wandb, train_lpclip, \
+    train_wandb_two_stage, train_wandb_iter, \
+    train_wandb_iter_wiseft, train_wandb_iter_wiseft_val
 from tools.utils import set_random_seed, collect_env_info
 from tools.logger import setup_logger
 from tools.train_utils import *
@@ -13,14 +17,35 @@ import warnings
 warnings.filterwarnings("ignore")
 
 
+dataset_name = {
+    "OxfordPets": "oxford_pets",
+    "OxfordFlowers": "oxford_flowers",
+    "FGVCAircraft": "fgvc_aircraft",
+    "DescribableTextures": "dtd",
+    "EuroSAT": "eurosat",
+    "StanfordCars": "stanford_cars",
+    "Food101": "food101",
+    "SUN397": "sun397",
+    "Caltech101": "caltech101",
+    "UCF101": "ucf101",
+    "ImageNet": "imagenet",
+    "ImageNetV2": "imagenetv2",
+    "ImageNetSketch": "imagenet_sketch",
+    "ImageNetA": "imagenet_a",
+    "ImageNetR": "imagenet_r"
+}
+
+
 def main(args):
     cfg = setup_cfg(args)
     logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
 
     # run = wandb.init(project='baseline_cattn_vocabloss')
-    run = wandb.init(project='baseline_cattn(_vocabloss)_sweep')
+    run = wandb.init(project='baseline_ablation')
     # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
-    run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
+    run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
+        f'-{cfg.OPTIM.NAME}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
+        f'-lr{cfg.OPTIM.LR}-it{cfg.OPTIM.MAX_ITER}-warmit{cfg.OPTIM.WARMUP_ITER}'
     # run = wandb.init(project='lpsam')
     # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s'
     # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.INPUT.NUM_VIEWS}v-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
@@ -53,19 +78,79 @@ def main(args):
     #     raise TypeError(f"Trainer {cfg.TRAINER.NAME} is not available.")
     model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
 
+    # prepare extracted features
+    # features_root = "/data/run01/scz0bkt/datasets/recognition_features/image/ViT-B-16_0/"
+    # features_file = f"shot_{cfg.DATASET.NUM_SHOTS}-seed_{cfg.SEED}.pth"
+    # ccrop_features_path = os.path.join(features_root, cfg.DATASET.NAME, dataset_name[cfg.DATASET.NAME], 'none', features_file)
+    # ccrop_features = torch.load(ccrop_features_path)
+    #
+    # image_features_path = os.path.join(features_root, cfg.DATASET.NAME, dataset_name[cfg.DATASET.NAME], 'flip_view_1', features_file)
+    # image_features = torch.load(image_features_path)
+    # train_features = torch.cat([ccrop_features['train']['features'], image_features['train']['features']], dim=0)
+    # train_labels = torch.cat([ccrop_features['train']['labels'], image_features['train']['labels']], dim=0)
+    #
+    # image_train_dataset = TensorDataset(
+    #     train_features,
+    #     train_labels
+    # )
+    # image_val_dataset = TensorDataset(
+    #     ccrop_features['val']['features'],
+    #     ccrop_features['val']['labels']
+    # )
+    #
+    # test_features_path = os.path.join(features_root, cfg.DATASET.NAME, dataset_name[cfg.DATASET.NAME], "test.pth")
+    # test_features = torch.load(test_features_path)
+    # test_dataset = TensorDataset(
+    #     test_features['features'],
+    #     test_features['labels']
+    # )
+    #
+    # batch_size = cfg.DATALOADER.TRAIN_X.BATCH_SIZE
+    # image_loader = DataLoader(
+    #     image_train_dataset,
+    #     batch_size=batch_size,
+    #     shuffle=True,
+    #     num_workers=args.num_workers,
+    #     pin_memory=True,
+    #     drop_last=False,
+    # )
+    #
+    # val_loader = DataLoader(
+    #     image_val_dataset,
+    #     batch_size=batch_size,
+    #     shuffle=False,
+    #     num_workers=args.num_workers,
+    #     pin_memory=True,
+    # )
+    #
+    # test_batch_size = cfg.DATALOADER.TEST.BATCH_SIZE
+    # test_loader = DataLoader(
+    #     test_dataset,
+    #     batch_size=test_batch_size,
+    #     shuffle=False,
+    #     num_workers=args.num_workers,
+    #     pin_memory=True,
+    # )
+
+    image_loader = data.train_loader
+    val_loader = data.val_loader
+    test_loader = data.test_loader
+
     # 3.train
     if cfg.TRAINER.NAME in ["lpclip", "lpsam"]:
         train_lpclip(cfg, model, data, args.local_rank)
     elif cfg.TRAINER.NAME in ["baseline_cattn_vocabloss_shembed_zsinit_fixedfirst"]:
         train_wandb_two_stage(cfg, model, data, args.local_rank)
+    elif "wiseft" in cfg.TRAINER.NAME:
+        train_wandb_iter_wiseft_val(cfg, model, data, image_loader, val_loader, test_loader, args.local_rank)
     else:
-        train_wandb(cfg, model, data, args.local_rank)
+        train_wandb_iter(cfg, model, data, args.local_rank)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=str, default="", help="path to dataset")
-    parser.add_argument("--output-dir", type=str, default="", help="output directory")
+    parser.add_argument("--root", type=str, default="/data/run01/scz0bkt/datasets/recognition/", help="path to dataset")
+    parser.add_argument("--output-dir", type=str, default="/data/run01/scz0bkt/datasets/recognition/prompt/Baseline_cattn_vocabloss/sweep_hyper/", help="output directory")
     parser.add_argument(
         "--resume",
         type=str,
@@ -77,7 +162,7 @@ if __name__ == "__main__":
         "--dist-train", type=bool, default=False, help="path to config file"
     )
     parser.add_argument(
-        "--seed", type=int, default=-1, help="only positive value enables a fixed seed"
+        "--seed", type=int, default=1, help="only positive value enables a fixed seed"
     )
     parser.add_argument(
         "--source-domains", type=str, nargs="+", help="source domains for DA/DG"

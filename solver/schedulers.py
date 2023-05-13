@@ -147,3 +147,74 @@ def build_scheduler(optimizer, optim_cfg):
             raise ValueError
 
     return scheduler
+
+
+def build_scheduler_iter(optimizer, optim_cfg):
+    """A function wrapper for building a learning rate scheduler.
+
+    Args:
+        optimizer (Optimizer): an Optimizer.
+        optim_cfg (CfgNode): optimization config.
+    """
+    lr_scheduler = optim_cfg.LR_SCHEDULER
+    stepsize = optim_cfg.STEPSIZE
+    gamma = optim_cfg.GAMMA
+    max_iter = optim_cfg.MAX_ITER
+    warmup_iter = optim_cfg.WARMUP_ITER
+    warmup_lr = optim_cfg.WARMUP_LR
+
+    if lr_scheduler not in AVAI_SCHEDS:
+        raise ValueError(
+            f"scheduler must be one of {AVAI_SCHEDS}, but got {lr_scheduler}"
+        )
+
+    if lr_scheduler == "single_step":
+        if isinstance(stepsize, (list, tuple)):
+            stepsize = stepsize[-1]
+
+        if not isinstance(stepsize, int):
+            raise TypeError(
+                "For single_step lr_scheduler, stepsize must "
+                f"be an integer, but got {type(stepsize)}"
+            )
+
+        if stepsize <= 0:
+            stepsize = max_iter
+
+        scheduler = torch.optim.lr_scheduler.StepLR(
+            optimizer, step_size=stepsize, gamma=gamma
+        )
+
+    elif lr_scheduler == "multi_step":
+        if not isinstance(stepsize, (list, tuple)):
+            raise TypeError(
+                "For multi_step lr_scheduler, stepsize must "
+                f"be a list, but got {type(stepsize)}"
+            )
+
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(
+            optimizer, milestones=stepsize, gamma=gamma
+        )
+
+    elif lr_scheduler == "cosine":
+        scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
+            optimizer, float(max_iter)
+        )
+
+    if warmup_iter > 0:
+        if optim_cfg.WARMUP_TYPE == "constant":
+            scheduler = ConstantWarmupScheduler(
+                optimizer, scheduler, warmup_iter,
+                warmup_lr
+            )
+
+        elif optim_cfg.WARMUP_TYPE == "linear":
+            scheduler = LinearWarmupScheduler(
+                optimizer, scheduler, warmup_iter,
+                warmup_lr
+            )
+
+        else:
+            raise ValueError
+
+    return scheduler

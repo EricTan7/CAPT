@@ -68,6 +68,18 @@ def test_collate_fn(batch):
     return torch.stack(images, dim=0), torch.stack(labels, dim=0)
 
 
+class TensorDataset(torch.utils.data.Dataset):
+    def __init__(self, input_tensor, label_tensor):
+        self.input_tensor = input_tensor
+        self.label_tensor = label_tensor
+
+    def __getitem__(self, index):
+        return self.input_tensor[index], self.label_tensor[index]
+
+    def __len__(self):
+        return self.input_tensor.size(0)
+
+
 class DataManager():
     def __init__(self, cfg, custom_tfm_train=None, custom_tfm_test=None):
         self.logger = logging.getLogger(cfg.TRAINER.NAME)
@@ -87,6 +99,7 @@ class DataManager():
         # 1.dataset + transform
         dataset = FACTORY[cfg.DATASET.NAME](cfg)    # dataset.train,  dataset.val,  dataset.test
         train_set = DatasetWrapper(cfg, dataset.train, transform=tfm_train)
+        val_set = DatasetWrapper(cfg, dataset.val, transform=tfm_test)
         test_set = DatasetWrapper(cfg, dataset.test, transform=tfm_test)
 
         # 2.dataloader
@@ -114,9 +127,16 @@ class DataManager():
         test_sampler = torch.utils.data.sampler.RandomSampler(test_set)
         test_loader = DataLoader(test_set,
                                  batch_size=test_batch,
-                                 sampler=test_sampler,
+                                 shuffle=False,
                                  num_workers=nw,
                                  drop_last=False)
+
+        val_loader = DataLoader(val_set,
+                                batch_size=test_batch,
+                                shuffle=False,
+                                num_workers=nw,
+                                drop_last=False,
+                                pin_memory=True)
 
         # Attributes
         self._num_classes = dataset.num_classes
@@ -125,6 +145,7 @@ class DataManager():
         # Dataset and data-loaders
         self.dataset = dataset      # self.dataset.train, self.dataset.test
         self.train_loader = train_loader
+        self.val_loader = val_loader
         self.test_loader = test_loader
 
         if cfg.VERBOSE:

@@ -7,7 +7,7 @@ from torch.nn import functional as F
 from solver import build_optimizer, build_scheduler
 from .base import BaseModel
 from models.head.cls_heads import ClsHead_v2
-from .bonder import CrossAttnBlock_v1
+from .bonder import CrossAttnBlock
 
 from clip import clip
 from clip.simple_tokenizer import SimpleTokenizer as _Tokenizer
@@ -71,7 +71,7 @@ class PromptLearner(nn.Module):
         device = 'cuda'
 
         num_query_token = 32
-        self.bonder = CrossAttnBlock_v1(ctx_dim, num_heads=8)
+        self.bonder = CrossAttnBlock(ctx_dim, num_heads=8)
         self.query = nn.Parameter(torch.zeros(1, num_query_token, ctx_dim))
         self.query.data.normal_(mean=0.0, std=0.02)
         print(f"Number of queries: {num_query_token}")

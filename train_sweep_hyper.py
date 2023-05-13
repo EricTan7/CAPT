@@ -10,10 +10,12 @@ from models import Baseline, lpclip, Baseline_cattn, Baseline_cattn_vocabloss, \
     Baseline_cattn_vocabloss_shembed_lscale, Baseline_cattn_vocabloss_shembed_zsinit_optimfc, \
     Baseline_sam, lpsam, Baseline_cattn_embedloss, Baseline_cattn_vocabloss_shembed_zsinit_2xcattn, \
     Baseline_cattn_vocabloss_shembed_zsinit_2xcattn_pe, Baseline_cattn_vl_pd, \
-    Baseline_cattn_vocabloss_shembed_zsinit_fixedfirst
+    Baseline_cattn_vocabloss_shembed_zsinit_fixedfirst, Baseline_cattn_vocabloss_shembed_zsinit_textaug, \
+    Baseline_cattn_vocabloss_shembed_zsinit_lscale, Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft, \
+    Baseline_cattn_vocabloss_shembed_zsinit_mul_lscale_wiseft, Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_nxcattn
 from configs import get_cfg_default
 from datasets import DataManager
-from processor import train, train_sweep
+from processor import train, train_sweep, train_sweep_iter_wiseft
 from tools.utils import set_random_seed, collect_env_info
 from tools.logger import setup_logger
 
@@ -21,6 +23,9 @@ import wandb
 import warnings
 warnings.filterwarnings("ignore")
 
+# import os
+# os.environ["WANDB_API_KEY"] = "40afa4ca3f265a034bccdf4e176b2f2254081f21"
+# os.environ["WANDB_MODE"] = 'offline'
 
 MODELS = {
     'baseline': Baseline,
@@ -41,7 +46,12 @@ MODELS = {
     'baseline_cattn_vocabloss_shembed_zsinit_2xcattn': Baseline_cattn_vocabloss_shembed_zsinit_2xcattn,
     'baseline_cattn_vocabloss_shembed_zsinit_2xcattn_pe': Baseline_cattn_vocabloss_shembed_zsinit_2xcattn_pe,
     'baseline_cattn_vl_pd': Baseline_cattn_vl_pd,
-    'baseline_cattn_vocabloss_shembed_zsinit_fixedfirst': Baseline_cattn_vocabloss_shembed_zsinit_fixedfirst
+    'baseline_cattn_vocabloss_shembed_zsinit_fixedfirst': Baseline_cattn_vocabloss_shembed_zsinit_fixedfirst,
+    'baseline_cattn_vocabloss_shembed_zsinit_textaug': Baseline_cattn_vocabloss_shembed_zsinit_textaug,
+    'baseline_cattn_vocabloss_shembed_zsinit_lscale': Baseline_cattn_vocabloss_shembed_zsinit_lscale,
+    'baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft': Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft,
+    'baseline_cattn_vocabloss_shembed_zsinit_mul_lscale_wiseft': Baseline_cattn_vocabloss_shembed_zsinit_mul_lscale_wiseft,
+    'baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_nxcattn': Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_nxcattn
 }
 
 
@@ -143,6 +153,14 @@ def extend_cfg(cfg):
 
     cfg.TRAIN.FIX_EPOCH = 0
 
+    cfg.OPTIM.MAX_ITER = 12800
+    cfg.OPTIM.WARMUP_ITER = 50
+    cfg.OPTIM.WARMUP_LR = 1e-5
+
+    cfg.MODEL.BONDER = CN()
+    cfg.MODEL.BONDER.DEPTH = 1
+    cfg.MODEL.BONDER.NUM_Q = 32
+
 
 def setup_cfg(args):
     cfg = get_cfg_default()
@@ -179,13 +197,18 @@ def main(config=None):
         # update cfg with sweep config
         cfg.OPTIM.NAME = wandb.config.optim
         cfg.OPTIM.LR = wandb.config.lr
-        cfg.OPTIM.WARMUP_CONS_LR = wandb.config.warmup_lr
-        cfg.OPTIM.MAX_EPOCH = wandb.config.epoch
+        # cfg.OPTIM.WARMUP_CONS_LR = wandb.config.warmup_lr
+        cfg.OPTIM.MAX_ITER = wandb.config.iters
+        # cfg.OPTIM.MAX_EPOCH = wandb.config.epoch
         cfg.OPTIM.WEIGHT_DECAY = wandb.config.weight_decay
+        cfg.DATALOADER.TRAIN_X.BATCH_SIZE = wandb.config.bs
         # cfg.TRAINER.BASELINE.FEA_SCALE = wandb.config.fea_scale
         # cfg.TRAINER.BASELINE.LOG_SCALE = wandb.config.log_scale
         cfg.freeze()
-        wandb.run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-wd{cfg.OPTIM.WEIGHT_DECAY}-e{cfg.OPTIM.MAX_EPOCH}'
+        wandb.run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
+            f'-{cfg.OPTIM.NAME}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
+            f'-lr{cfg.OPTIM.LR}-it{cfg.OPTIM.MAX_ITER}-warmit{cfg.OPTIM.WARMUP_ITER}'
+        # wandb.run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-wd{cfg.OPTIM.WEIGHT_DECAY}-e{cfg.OPTIM.MAX_EPOCH}'
         # wandb.run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-lscale{cfg.TRAINER.BASELINE.LOG_SCALE}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
         # wandb.run.name = 'cj_gb-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}'
 
@@ -211,13 +234,17 @@ def main(config=None):
         data = DataManager(cfg)
 
         # 2.model ( +optim +sche)
-        try:
-            model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
-        except:
-            raise TypeError(f"Trainer {cfg.TRAINER.NAME} is not available.")
+        # try:
+        #     model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
+        # except:
+        #     raise TypeError(f"Trainer {cfg.TRAINER.NAME} is not available.")
+        model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
 
         # 3.train
-        train_sweep(cfg, model, data, args['local_rank'])
+        if "wiseft" in cfg.TRAINER.NAME:
+            train_sweep_iter_wiseft(cfg, model, data, args['local_rank'])
+        else:
+            train_sweep(cfg, model, data, args['local_rank'])
 
 
 
@@ -291,11 +318,13 @@ if __name__ == "__main__":
                 'optim': {'value': 'adamw'},
                 # 'lr': {'values': [0.006, 0.004, 0.002]},
                 # 'lr': {'values': [0.1, 0.01]},
-                'lr': {'values': [0.004, 0.003, 0.002, 0.001, 0.0005]},
-                'weight_decay': {'values': [5e-4, 0.01]},
-                'warmup_lr': {'value': 1e-5},
+                'lr': {'values': [0.002, 0.001, 0.0005, 0.0002, 0.0001, 0.00007]},
+                'bs': {'values': [8, 32, 64]},
+                'weight_decay': {'value': 1e-4},
+                'iters': {'values': [12800, 25600]},
+                # 'warmup_lr': {'value': 1e-5},
                 # 'epoch': {'values': [50, 200]},
-                'epoch': {'values': [50, 100]},
+                # 'epoch': {'values': [50, 100]},
                 # 'fea_scale': {'values': [64, 32, 16, 4]},
                 # 'fea_scale': {'value': 1},
                 # 'log_scale': {'values': [100, 64, 32, 16, 4]},

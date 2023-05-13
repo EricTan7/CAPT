@@ -9,7 +9,7 @@ from torch.nn import functional as F
 from solver import build_optimizer, build_scheduler
 from .base import BaseModel
 from models.head import *
-from .bonder import CrossAttnBlock_v1, CrossAttnBlock_v2, CrossAttnBlock_v2_pe, Block
+from .bonder import *
 
 from clip import clip
 from clip.simple_tokenizer import SimpleTokenizer as _Tokenizer

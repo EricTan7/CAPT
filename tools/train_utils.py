@@ -8,7 +8,11 @@ from models import Baseline, lpclip, Baseline_cattn, Baseline_cattn_vocabloss, \
     Baseline_cattn_vocabloss_shembed_lscale, Baseline_cattn_vocabloss_shembed_zsinit_optimfc, \
     Baseline_sam, lpsam, Baseline_cattn_embedloss, Baseline_cattn_vocabloss_shembed_zsinit_2xcattn, \
     Baseline_cattn_vocabloss_shembed_zsinit_2xcattn_pe, Baseline_cattn_vl_pd, \
-    Baseline_cattn_vocabloss_shembed_zsinit_fixedfirst, Baseline_cattn_vocabloss_shembed_zsinit_textaug
+    Baseline_cattn_vocabloss_shembed_zsinit_fixedfirst, Baseline_cattn_vocabloss_shembed_zsinit_textaug, \
+    Baseline_cattn_vocabloss_shembed_zsinit_lscale, Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft, \
+    Baseline_cattn_vocabloss_shembed_zsinit_mul_lscale_wiseft, Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_nxcattn, \
+    Baseline_cattn_vocabloss_shembed_zsinit_lscale_lnable_wiseft_nxcattn, Baseline_cattn_coophead, \
+    Baseline_cattn_vocabloss_shembed_zsinit_lscale_fixed, Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_wotextloss
 from configs import get_cfg_default
 import logging
 
@@ -33,7 +37,16 @@ MODELS = {
     'baseline_cattn_vocabloss_shembed_zsinit_2xcattn_pe': Baseline_cattn_vocabloss_shembed_zsinit_2xcattn_pe,
     'baseline_cattn_vl_pd': Baseline_cattn_vl_pd,
     'baseline_cattn_vocabloss_shembed_zsinit_fixedfirst': Baseline_cattn_vocabloss_shembed_zsinit_fixedfirst,
-    'baseline_cattn_vocabloss_shembed_zsinit_textaug': Baseline_cattn_vocabloss_shembed_zsinit_textaug
+    'baseline_cattn_vocabloss_shembed_zsinit_textaug': Baseline_cattn_vocabloss_shembed_zsinit_textaug,
+    'baseline_cattn_vocabloss_shembed_zsinit_lscale': Baseline_cattn_vocabloss_shembed_zsinit_lscale,
+    'baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft': Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft,
+    'baseline_cattn_vocabloss_shembed_zsinit_mul_lscale_wiseft': Baseline_cattn_vocabloss_shembed_zsinit_mul_lscale_wiseft,
+    'baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_nxcattn': Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_nxcattn,
+    'baseline_cattn_vocabloss_shembed_zsinit_lscale_lnable_wiseft_nxcattn': Baseline_cattn_vocabloss_shembed_zsinit_lscale_lnable_wiseft_nxcattn,
+    'baseline_cattn_coophead': Baseline_cattn_coophead,
+    'baseline_cattn_vocabloss_shembed_zsinit_lscale_fixed': Baseline_cattn_vocabloss_shembed_zsinit_lscale_fixed,
+    'baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_wotextloss': Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_wotextloss,
+    'baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_wiseftval': Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft
 }
 
 
@@ -134,6 +147,14 @@ def extend_cfg(cfg):
     cfg.MODEL.SAM.NAME = ''
 
     cfg.TRAIN.FIX_EPOCH = 0
+
+    cfg.OPTIM.MAX_ITER = 12800
+    cfg.OPTIM.WARMUP_ITER = 50
+    cfg.OPTIM.WARMUP_LR = 1e-5
+
+    cfg.MODEL.BONDER = CN()
+    cfg.MODEL.BONDER.DEPTH = 1
+    cfg.MODEL.BONDER.NUM_Q = 32
 
 
 def setup_cfg(args):

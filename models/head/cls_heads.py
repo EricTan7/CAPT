@@ -7,7 +7,8 @@ sys.path.insert(0, '.')
 import torch
 import torch.nn as nn
 from clip import clip
-
+import torch.nn.functional as F
+import numpy as np
 
 
 class ClsHead_v1(nn.Module):
@@ -175,8 +176,8 @@ class ClsHead_lpsam(nn.Module):
         return logits
 
 
-class ClsHead_fused(nn.Module):
-    def __init__(self, cfg, classnames, clip_model, bias=False):
+class ClsHead_cat(nn.Module):
+    def __init__(self, classnames, clip_model, bias=False):
         super().__init__()
         vis_dim = clip_model.visual.output_dim
         n_cls = len(classnames)
@@ -187,3 +188,57 @@ class ClsHead_fused(nn.Module):
         logits = self.fc(fused_fea)
 
         return logits
+
+
+class ClsHead_cat_lscale(nn.Module):
+    def __init__(self, classnames, clip_model, logit_scale, bias=False):
+        super().__init__()
+        vis_dim = clip_model.visual.output_dim
+        n_cls = len(classnames)
+
+        self.fc = nn.Linear(vis_dim*2, n_cls, bias=bias)
+        self.logit_scale = logit_scale
+
+    def forward(self, x):   # [B,1024] [B,1024]
+        x = F.normalize(x, dim=1)
+        x = self.fc(x)
+        x = x * self.logit_scale.exp()
+
+        return x
+
+
+class ClsHead_mul_lscale(nn.Module):
+    def __init__(self, classnames, clip_model, logit_scale, bias=False):
+        super().__init__()
+        vis_dim = clip_model.visual.output_dim
+        n_cls = len(classnames)
+
+        self.fc = nn.Linear(vis_dim, n_cls, bias=bias)
+        self.logit_scale = logit_scale
+
+    def forward(self, x):   # [B,1024] [B,1024]
+        x = F.normalize(x, dim=1)
+        x = self.fc(x)
+        x = x * self.logit_scale.exp()
+
+        return x
+
+
+class ClsHead_cat_lscale_lnable(nn.Module):
+    def __init__(self, classnames, clip_model, bias=False):
+        super().__init__()
+        vis_dim = clip_model.visual.output_dim
+        n_cls = len(classnames)
+
+        self.fc = nn.Linear(vis_dim*2, n_cls, bias=bias)
+
+        # Learnable
+        # self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))  # the same as CLIP
+        self.logit_scale = nn.Parameter(torch.tensor(4.60517))
+
+    def forward(self, x):   # [B,1024] [B,1024]
+        x = F.normalize(x, dim=1)
+        x = self.fc(x)
+        x = x * self.logit_scale.exp()
+
+        return x

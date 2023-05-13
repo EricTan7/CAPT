@@ -1,1 +1,1 @@
-from .make_dataloader import DataManager
+from .make_dataloader import DataManager, TensorDataset

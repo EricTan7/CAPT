@@ -6,18 +6,16 @@ import torch
 import torch.nn as nn
 from torch.nn import functional as F
 
-from solver import build_optimizer, build_scheduler
+from solver import build_optimizer, build_scheduler, build_scheduler_iter
 from .base import BaseModel
 from models.head import *
-from .bonder import CrossAttnBlock, CrossAttnBlock_sam
-from .backbone import ImageEncoderViT, MODEL_PARAMS
+from .bonder import CrossAttnBlock, CrossAttnBlock_nx, CrossAttnBlock_projkv,\
+    CrossAttnBlock_nx_projkv, CrossAttnBlock_single_query
 
 from clip import clip
 from clip.simple_tokenizer import SimpleTokenizer as _Tokenizer
 from clip.simple_tokenizer import MySimpleTokenizer
 from datasets.templates import get_templates
-from functools import partial
-import numpy as np
 
 _tokenizer = _Tokenizer()
 
@@ -49,7 +47,7 @@ class TextEncoder(nn.Module):
         self.text_projection = clip_model.text_projection
         self.dtype = clip_model.dtype
 
-    def forward(self, prompts, tokenized_prompts):
+    def forward(self, prompts, tokenized_prompts):      # [b,cls, num_query, dim]
         x = prompts + self.positional_embedding.type(self.dtype)
         x = x.permute(1, 0, 2)  # NLD -> LND
         x = self.transformer(x)
@@ -63,7 +61,7 @@ class TextEncoder(nn.Module):
         return x
 
 
-class PromptLearner(nn.Module):
+class PromptLearner_coophead(nn.Module):
     def __init__(self, cfg, classnames, clip_model):
         super().__init__()
         n_cls = len(classnames)
@@ -79,12 +77,13 @@ class PromptLearner(nn.Module):
         assert cfg_imsize == clip_imsize, f"cfg_imsize ({cfg_imsize}) must equal to clip_imsize ({clip_imsize})"
         device = 'cuda'
 
-        num_query_token = 32
-        hidden_act = 'gelu'
-        self.bonder = CrossAttnBlock_sam(ctx_dim, num_heads=8)
+        num_query_token = cfg.MODEL.BONDER.NUM_Q
+        depth = cfg.MODEL.BONDER.DEPTH
+        self.bonder = CrossAttnBlock_projkv(ctx_dim, num_heads=8)
         self.query = nn.Parameter(torch.zeros(1, num_query_token, ctx_dim))
         self.query.data.normal_(mean=0.0, std=0.02)
         print(f"Number of queries: {num_query_token}")
+        print(f"Depth of bonder: {depth}")
         # self.token_embedding = nn.Embedding(vocab_size, transformer_width)
         self.vocab_head = nn.Linear(transformer_width, vocab_size, bias=False)
         # self.vocab_head = BertOnlyMLMHead(hidden_size=ctx_dim, hidden_act=hidden_act, vocab_size=vocab_size)
@@ -108,41 +107,37 @@ class PromptLearner(nn.Module):
 
         classnames = [name.replace("_", " ").replace("(", "").replace(")", "") for name in classnames]
         name_lens = [len(_tokenizer.encode(name)) for name in classnames]
-        pseudo_query = [" X" * num_query_token + '.']   # only used to locate <eos>, and store prefix suffix
+        pseudo_prompts = [" ".join(["X"] * num_query_token) + " " + name + "." for name in classnames]
         label_sentence = ["a photo of a " + n for n in classnames]
 
-        tokenized_query = clip.tokenize(pseudo_query)  # [1,77,512]   only used to locate <eos>, and store prefix suffix
+        tokenized_prompts = clip.tokenize(pseudo_prompts)  # [n_cls,77,512]   only used to locate <eos>, and store prefix suffix
+
         tokenized_label = clip.tokenize(label_sentence)     # [n_cls, 77],  [n_cls, 77]
         tokenized_label = tokenized_label[:, 1:1 + num_query_token]
-        # mask = mask.unsqueeze(-1).expand(-1, -1, ctx_dim)
         with torch.no_grad():
-            embedding = clip_model.token_embedding(tokenized_query).type(dtype)  # [1,77,512]
-            # label_embed = clip_model.token_embedding(tokenized_label).type(dtype)  # [n_cls, 77, 512]
+            embedding_prompts = clip_model.token_embedding(tokenized_prompts).type(dtype)  # [n_cls, 77, 512]
 
-        self.register_buffer("token_prefix", embedding[:, :1, :])  # SOS
-        self.register_buffer("token_suffix", embedding[:, 1 + num_query_token:, :])  # EOS
+        self.register_buffer("token_prefix_prompts", embedding_prompts[:, :1, :])  # SOS
+        self.register_buffer("token_suffix_prompts", embedding_prompts[:, 1 + num_query_token:, :])  # EOS
 
         self.n_cls = n_cls
         self.n_ctx = n_ctx
-        self.tokenized_query = tokenized_query.to(device)
+        self.tokenized_prompts = tokenized_prompts.to(device)
         self.label = tokenized_label.masked_fill(tokenized_label == 0, -100).to(device)   # "remove" pad token, 0 is pad_token_ids
         self.name_lens = torch.tensor(name_lens)
         self.num_query_token = num_query_token
         self.vocab_size = vocab_size
-        self.criterion = nn.CrossEntropyLoss(reduction='mean', label_smoothing=0.1)     # todo:label smoothing?
+        self.criterion = nn.CrossEntropyLoss(reduction='mean', label_smoothing=0.1)
 
-    def forward(self, im_features, im_cls, target=None):  # [B,512] -> [B,5,512]
-        prefix = self.token_prefix.expand(im_features.size(0), -1, -1)  # [B,1,512]
-        suffix = self.token_suffix.expand(im_features.size(0), -1, -1)  # [B,77-num_query,512]
-
-        # [cls]
-        # todo: must discard cls token, since the dim is different
-        query = self.query.expand(im_features.size(0), -1, -1).clone()
-        # query.data[:, self.n_ctx] = im_cls[:, :]
-        query_output = self.bonder(self.query, im_features)   # [B, num_query, dim]
-        query_output_vocab = self.vocab_head(query_output)   # [B, num_query, vocab_size]
-        # label [B,num_query]    head [B,num_query,vocab_size]
+    def forward(self, im_features, im_cls, target=None):
+        prefix = self.token_prefix_prompts.unsqueeze(0).expand(im_cls.size(0), -1, -1, -1)      # [cls, 1, 512]
+        suffix = self.token_suffix_prompts.unsqueeze(0).expand(im_cls.size(0), -1, -1, -1)      # [cls, 72, 512]
+        # note: cat [cls] or not?
+        query = self.query.expand(im_cls.size(0), -1, -1).clone()   # [b, num_q, dim]
+        query.data[:, self.n_ctx] = im_cls[:, :]
+        query_output = self.bonder(self.query, im_features)  # [B, num_query, dim]
         if self.training:
+            query_output_vocab = self.vocab_head(query_output)
             target = self.label[target]  # [B,num_query]
             loss_prompts = self.criterion(
                 query_output_vocab.view(-1, self.vocab_size),
@@ -151,85 +146,54 @@ class PromptLearner(nn.Module):
         else:
             loss_prompts = 0    # dummy
 
-        prompts = torch.cat([prefix, query_output, suffix], dim=1)  # [B, 77, 512]
-
+        query_output = query_output.unsqueeze(1)
+        query_output = query_output.expand(-1, self.n_cls, -1, -1)  # [b, cls, num_query, dim]
+        prompts = torch.cat([prefix, query_output, suffix], dim=2)
         return prompts, loss_prompts
 
 
-class CustomCLIP(nn.Module):
+class CustomCLIP_coophead(nn.Module):
     def __init__(self, cfg, classnames, clip_model):
         super().__init__()
-        self.prompt_learner = PromptLearner(cfg, classnames, clip_model)
-        self.tokenized_prompts = self.prompt_learner.tokenized_query
-        # self.image_encoder = clip_model.visual
-        # Use SAM image encoder
-        params = MODEL_PARAMS[cfg.MODEL.SAM.NAME]
-        self.image_encoder = ImageEncoderViT(
-            depth=params['encoder_depth'],
-            embed_dim=params['encoder_embed_dim'],
-            img_size=cfg.INPUT.SIZE[0],       # params['image_size'],
-            mlp_ratio=4,
-            norm_layer=partial(torch.nn.LayerNorm, eps=1e-6),
-            num_heads=params['encoder_num_heads'],
-            patch_size=params['vit_patch_size'],
-            qkv_bias=True,
-            use_rel_pos=True,
-            global_attn_indexes=params['encoder_global_attn_indexes'],
-            window_size=14,
-            out_chans=params['prompt_embed_dim'],
-        )
+        device = 'cuda'
+        self.prompt_learner = PromptLearner_coophead(cfg, classnames, clip_model)
+        self.tokenized_prompts = self.prompt_learner.tokenized_prompts
+        self.image_encoder = clip_model.visual
         self.text_encoder = TextEncoder(clip_model)
-        self.logit_scale = clip_model.logit_scale
         self.dtype = clip_model.dtype
         self.backbone = cfg.MODEL.BACKBONE.NAME
-
-        vis_dim = params['prompt_embed_dim']
-        ctx_dim = clip_model.ln_final.weight.shape[0]
-        self.cls_head = ClsHead_sam(classnames, vis_dim, ctx_dim)
+        self.logit_scale = clip_model.logit_scale
 
         # shared weights and frozen it
         self.prompt_learner.vocab_head.weight.data = clip_model.token_embedding.weight.data.clone()
 
-        with open(cfg.MODEL.SAM.CHECKPOINT, "rb") as f:
-            state_dict = torch.load(f)
-
-        # equal interval sampling
-        pos_embed_idx = np.linspace(0, 63, 14)
-        pos_embed_idx = list(map(int, pos_embed_idx))
-        rel_pos_idx = np.linspace(0, 126, 27)
-        rel_pos_idx = list(map(int, rel_pos_idx))
-        for k, v in state_dict.items():
-            if k == 'pos_embed':
-                v = v[:, pos_embed_idx, :, :]
-                state_dict[k] = v[:, :, pos_embed_idx, :]
-            elif ('rel_pos_w' in k) or ('rel_pos_h' in k):
-                if v.shape[0] >=127:
-                    state_dict[k] = v[rel_pos_idx, :]
-        self.image_encoder.load_state_dict(state_dict)
-
     def forward(self, image, target=None):  # image: [B,3,224,224]  label:[B]
         tokenized_prompts = self.tokenized_prompts  # [1, 77]
-        logit_scale = self.logit_scale.exp()  # [B]
+        logit_scale = self.logit_scale.exp()
 
-        image_features = self.image_encoder(image.type(self.dtype))     # [B, 256, 14, 14]
-        image_features = image_features.view(image_features.size(0), image_features.size(1), -1).permute(0,2,1)     # [B, 196, 256]
-        image_features = image_features[:, :self.prompt_learner.num_query_token, :]
-        image_features = image_features / image_features.norm(dim=-1, keepdim=True)
-        image_cls = image_features[:, 0, :]     # [B, 256]
-        image_cls = image_cls / image_cls.norm(dim=-1, keepdim=True)
-        # image_features = image_features.float()
-
+        image_features, image_cls = self.image_encoder(image.type(self.dtype))
+        # rn50: [B,2048,7,7]
+        if self.backbone.startswith('RN'):
+            image_features = image_features.view(image_features.size(0), image_features.size(1), -1).permute(0,2,1)     # [B,49,2048]
+        # vitb16: [B,197,512]
         prompts, loss_prompts = self.prompt_learner(image_features, image_cls, target)  # [B, 77, 1024]
 
-        text_features = self.text_encoder(prompts, tokenized_prompts)   # [B,1024]
-        text_features = text_features / text_features.norm(dim=-1, keepdim=True)
-        text_features, image_cls = text_features.float(), image_cls.float()
-        logits = self.cls_head(image_cls, text_features)
+        logits = []
+        image_cls = image_cls / image_cls.norm(dim=-1, keepdim=True)    # [b,dim]
+        for pts_i, im_i in zip(prompts, image_cls):     # [dim]
+            text_features = self.text_encoder(pts_i, tokenized_prompts)     # [cls,dim]
+            text_features = text_features / text_features.norm(dim=-1, keepdim=True)
+            l_i = logit_scale * im_i @ text_features.t()    # [cls]
+            logits.append(l_i)
+        logits = torch.stack(logits)
+        # print("image shape:", image_cls.shape)
+        # print("text shape:", text_features.shape)
+        # print("logit shape:", logits.shape)
 
         return logits, loss_prompts
 
 
-class Baseline_sam(BaseModel):
+class Baseline_cattn_coophead(BaseModel):
     def __init__(self, cfg, classnames=None):
         super().__init__()
         self.logger = logging.getLogger(cfg.TRAINER.NAME)
@@ -237,7 +201,7 @@ class Baseline_sam(BaseModel):
         self.cfg = cfg
         self.test_freq = cfg.TRAIN.TEST_FREQ
 
-        self.logger.info(f"Loading CLIP for text encoder")
+        self.logger.info(f"Loading CLIP (backbone: {cfg.MODEL.BACKBONE.NAME})")
         clip_model = load_clip_to_cpu(cfg)
 
         if cfg.TRAINER.PREC == "fp32" or cfg.TRAINER.PREC == "amp":
@@ -247,8 +211,8 @@ class Baseline_sam(BaseModel):
         for param in clip_model.parameters():
             param.requires_grad = False
 
-        self.logger.info("Building Baseline_sam")
-        self.model = CustomCLIP(cfg, classnames, clip_model)
+        self.logger.info("Building Baseline_cattn_coophead")
+        self.model = CustomCLIP_coophead(cfg, classnames, clip_model)
 
         self.logger.info("Turning off gradients in both the image and the text encoder")
         name_to_update = ["prompt_learner", "cls_head"]
@@ -269,16 +233,10 @@ class Baseline_sam(BaseModel):
                 enabled.add(name)
         self.logger.info(f"Parameters to be updated: {enabled}")
 
-        # not necessary
-        # if cfg.MODEL.INIT_WEIGHTS:
-        #     load_pretrained_weights(self.model.prompt_learner, cfg.MODEL.INIT_WEIGHTS)
-
-        # NOTE: only give prompt_learner,cls_head to the optimizer
-        self.optim = build_optimizer([self.model.prompt_learner, self.model.cls_head], cfg.OPTIM)
-        self.sched = build_scheduler(self.optim, cfg.OPTIM)
+        self.optim = build_optimizer(self.model.prompt_learner, cfg.OPTIM)
+        self.sched = build_scheduler_iter(self.optim, cfg.OPTIM)
 
         self.register_model("prompt_learner", self.model.prompt_learner, self.optim, self.sched)
-        self.register_model("cls_head", self.model.cls_head)
 
     def check_cfg(self, cfg):
         assert cfg.TRAINER.PREC in ["fp16", "fp32", "amp"]

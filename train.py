@@ -54,8 +54,8 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=str, default="", help="path to dataset")
-    parser.add_argument("--output-dir", type=str, default="", help="output directory")
+    parser.add_argument("--root", type=str, default="/data/run01/scz0bkt/datasets/recognition/", help="path to dataset")
+    parser.add_argument("--output-dir", type=str, default="/data/run01/scz0bkt/datasets/recognition/prompt/Baseline_cattn_vocabloss/sweep_hyper/", help="output directory")
     parser.add_argument(
         "--resume",
         type=str,

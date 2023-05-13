@@ -250,3 +250,121 @@ CUDA_VISIBLE_DEVICES=6 python train_wandb.py \
 --config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_textaug.yaml \
 DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 3 \
 OPTIM.LR 0.002 OPTIM.MAX_EPOCH 100
+
+
+# zsinit + cvpr codebase hyperparams
+CUDA_VISIBLE_DEVICES=7 python train_wandb.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit.yaml \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 20 \
+DATALOADER.TRAIN_X.BATCH_SIZE 8 OPTIM.LR 0.0001
+
+# zsinit + align to cvpr codebase
+CUDA_VISIBLE_DEVICES=6 python train_wandb.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_lscale.yaml \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 20
+
+CUDA_VISIBLE_DEVICES=4 python train_wandb.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_lscale.yaml \
+DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.PRINT_FREQ 20 \
+DATALOADER.TRAIN_X.BATCH_SIZE 8 OPTIM.LR 0.0001
+
+
+# # zsinit + align to cvpr codebase + iteration train
+CUDA_VISIBLE_DEVICES=7 python train_wandb_iter.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_lscale_iter.yaml \
+DATASET.NUM_SHOTS 16 DATALOADER.TRAIN_X.BATCH_SIZE 8 OPTIM.LR 0.0001
+
+CUDA_VISIBLE_DEVICES=6 python train_wandb_iter.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_lscale_iter.yaml \
+DATASET.NUM_SHOTS 16
+
+
+# previous 72.6 + wiseft
+CUDA_VISIBLE_DEVICES=6 python train_wandb_iter.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_lscale_iter_wiseft.yaml \
+DATASET.NUM_SHOTS 16 DATALOADER.TRAIN_X.BATCH_SIZE 8 OPTIM.LR 0.0001
+
+
+# overfit when increase iters, so ablate the "warmup iter"
+CUDA_VISIBLE_DEVICES=3 python train_wandb_iter.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_lscale_iter_wiseft.yaml \
+DATASET.NUM_SHOTS 16 DATALOADER.TRAIN_X.BATCH_SIZE 8 OPTIM.LR 0.0001 \
+OPTIM.WARMUP_ITER 50
+
+CUDA_VISIBLE_DEVICES=2 python train_wandb_iter.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_lscale_iter_wiseft.yaml \
+DATASET.NUM_SHOTS 16 DATALOADER.TRAIN_X.BATCH_SIZE 8 OPTIM.LR 0.0001 \
+OPTIM.WARMUP_ITER 100
+
+CUDA_VISIBLE_DEVICES=1 python train_wandb_iter.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_lscale_iter_wiseft.yaml \
+DATASET.NUM_SHOTS 16 DATALOADER.TRAIN_X.BATCH_SIZE 8 OPTIM.LR 0.0001 \
+OPTIM.WARMUP_ITER 500
+
+CUDA_VISIBLE_DEVICES=0 python train_wandb_iter.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_lscale_iter_wiseft.yaml \
+DATASET.NUM_SHOTS 16 DATALOADER.TRAIN_X.BATCH_SIZE 8 OPTIM.LR 0.0001 \
+OPTIM.WARMUP_ITER 1000
+
+
+
+
+# previous + mul
+CUDA_VISIBLE_DEVICES=7 python train_wandb_iter.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_lscale_iter_wiseft_mul.yaml \
+DATASET.NUM_SHOTS 16 DATALOADER.TRAIN_X.BATCH_SIZE 8 OPTIM.LR 0.0001 \
+OPTIM.WARMUP_ITER 50
+
+CUDA_VISIBLE_DEVICES=6 python train_wandb_iter.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_lscale_iter_wiseft_mul.yaml \
+DATASET.NUM_SHOTS 16 DATALOADER.TRAIN_X.BATCH_SIZE 8 OPTIM.LR 0.0001 \
+OPTIM.WARMUP_ITER 100
+
+CUDA_VISIBLE_DEVICES=5 python train_wandb_iter.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_lscale_iter_wiseft_mul.yaml \
+DATASET.NUM_SHOTS 16 DATALOADER.TRAIN_X.BATCH_SIZE 8 OPTIM.LR 0.0001 \
+OPTIM.WARMUP_ITER 500
+
+CUDA_VISIBLE_DEVICES=4 python train_wandb_iter.py \
+--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/sweep_hyper/ \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_lscale_iter_wiseft_mul.yaml \
+DATASET.NUM_SHOTS 16 DATALOADER.TRAIN_X.BATCH_SIZE 8 OPTIM.LR 0.0001 \
+OPTIM.WARMUP_ITER 1000
+
+
+# ablate: nxcattn
+CUDA_VISIBLE_DEVICES=0 WANDB_API_KEY=40afa4ca3f265a034bccdf4e176b2f2254081f21 WANDB_MODE=offline python train_wandb_iter.py \
+--dataset-config-file configs/datasets/imagenet.yaml \
+--config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_shembed_zsinit_lscale_iter_wiseft_nxcattn.yaml \
+DATASET.NUM_SHOTS 16 MODEL.BONDER.DEPTH 2
+
+
+cd run/code/Baseline
+sbatch scripts/baseline/train1.sh

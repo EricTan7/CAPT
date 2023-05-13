@@ -16,6 +16,13 @@
           </mappings>
         </serverdata>
       </paths>
+      <paths name="scz0bkt">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/data/run01/scz0bkt/code/Baseline" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="tanhao@172.18.32.191:22">
         <serverdata>
           <mappings>
