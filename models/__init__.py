@@ -16,3 +16,4 @@ from .lpsam import lpsam
 from .baseline_cattn_embedloss import Baseline_cattn_embedloss
 from .baseline_cattn_vl_pd import Baseline_cattn_vl_pd
 from .baseline_cattn_coophead import Baseline_cattn_coophead
+from .baseline_sattn import Baseline_sattn

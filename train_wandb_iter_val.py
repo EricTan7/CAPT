@@ -41,14 +41,11 @@ def main(args):
     logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
 
     # run = wandb.init(project='baseline_cattn_vocabloss')
-    run = wandb.init(project='baseline_ablation')
+    run = wandb.init(project='baseline_sattn')
     # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
     run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
         f'-{cfg.OPTIM.NAME}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
         f'-lr{cfg.OPTIM.LR}-it{cfg.OPTIM.MAX_ITER}-warmit{cfg.OPTIM.WARMUP_ITER}'
-    # run = wandb.init(project='lpsam')
-    # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s'
-    # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.INPUT.NUM_VIEWS}v-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
 
     if cfg.SEED >= 0:
         logger.info("Setting fixed seed: {}".format(cfg.SEED))
@@ -72,10 +69,6 @@ def main(args):
     data = DataManager(cfg)
 
     # 2.model ( +optim +sche)
-    # try:
-    #     model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
-    # except:
-    #     raise TypeError(f"Trainer {cfg.TRAINER.NAME} is not available.")
     model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
 
     # prepare extracted features
@@ -141,7 +134,7 @@ def main(args):
         train_lpclip(cfg, model, data, args.local_rank)
     elif cfg.TRAINER.NAME in ["baseline_cattn_vocabloss_shembed_zsinit_fixedfirst"]:
         train_wandb_two_stage(cfg, model, data, args.local_rank)
-    elif "wiseft" in cfg.TRAINER.NAME:
+    elif ("wiseft" in cfg.TRAINER.NAME) or ("sattn" in cfg.TRAINER.NAME):
         train_wandb_iter_wiseft_val(cfg, model, data, image_loader, val_loader, test_loader, args.local_rank)
     else:
         train_wandb_iter(cfg, model, data, args.local_rank)

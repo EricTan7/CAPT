@@ -12,7 +12,8 @@ from models import Baseline, lpclip, Baseline_cattn, Baseline_cattn_vocabloss, \
     Baseline_cattn_vocabloss_shembed_zsinit_lscale, Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft, \
     Baseline_cattn_vocabloss_shembed_zsinit_mul_lscale_wiseft, Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_nxcattn, \
     Baseline_cattn_vocabloss_shembed_zsinit_lscale_lnable_wiseft_nxcattn, Baseline_cattn_coophead, \
-    Baseline_cattn_vocabloss_shembed_zsinit_lscale_fixed, Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_wotextloss
+    Baseline_cattn_vocabloss_shembed_zsinit_lscale_fixed, Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_wotextloss, \
+    Baseline_sattn
 from configs import get_cfg_default
 import logging
 
@@ -46,7 +47,8 @@ MODELS = {
     'baseline_cattn_coophead': Baseline_cattn_coophead,
     'baseline_cattn_vocabloss_shembed_zsinit_lscale_fixed': Baseline_cattn_vocabloss_shembed_zsinit_lscale_fixed,
     'baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_wotextloss': Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_wotextloss,
-    'baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_wiseftval': Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft
+    'baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_wiseftval': Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft,
+    'baseline_sattn': Baseline_sattn
 }
 
 
