@@ -18,6 +18,11 @@ from datasets.oxford_pets import OxfordPets
 from datasets.stanford_cars import StanfordCars
 from datasets.sun397 import SUN397
 from datasets.ucf101 import UCF101
+from datasets.imagenet_a import ImageNetA
+from datasets.imagenet_r import ImageNetR
+from datasets.imagenet_sketch import ImageNetSketch
+from datasets.imagenetv2 import ImageNetV2
+from datasets.imagenet import ImageNet_wval
 
 
 FACTORY = {
@@ -31,7 +36,12 @@ FACTORY = {
     'OxfordPets': OxfordPets,
     'StanfordCars': StanfordCars,
     'SUN397': SUN397,
-    'UCF101': UCF101
+    'UCF101': UCF101,
+    'ImageNetV2': ImageNetV2,
+    'ImageNetA': ImageNetA,
+    'ImageNetR': ImageNetR,
+    'ImageNetSketch': ImageNetSketch,
+    'ImageNet_wval': ImageNet_wval
 }
 
 # output = {
@@ -98,9 +108,9 @@ class DataManager():
 
         # 1.dataset + transform
         dataset = FACTORY[cfg.DATASET.NAME](cfg)    # dataset.train,  dataset.val,  dataset.test
-        train_set = DatasetWrapper(cfg, dataset.train, transform=tfm_train)
-        val_set = DatasetWrapper(cfg, dataset.val, transform=tfm_test)
-        test_set = DatasetWrapper(cfg, dataset.test, transform=tfm_test)
+        train_set = DatasetWrapper(cfg, dataset.train, transform=tfm_train, caption=cfg.MODEL.CAPTION)
+        val_set = DatasetWrapper(cfg, dataset.val, transform=tfm_test, caption=False)
+        test_set = DatasetWrapper(cfg, dataset.test, transform=tfm_test, caption=False)
 
         # 2.dataloader
         test_batch = cfg.DATALOADER.TEST.BATCH_SIZE
@@ -175,10 +185,11 @@ class DataManager():
 
 
 class DatasetWrapper(Dataset):
-    def __init__(self, cfg, data_source, transform=None):
+    def __init__(self, cfg, data_source, transform=None, caption=False):
         self.cfg = cfg
         self.data_source = data_source
         self.transform = transform  # accept list (tuple) as input
+        self.use_caption = caption
 
     def __len__(self):
         return len(self.data_source)
@@ -186,11 +197,20 @@ class DatasetWrapper(Dataset):
     def __getitem__(self, idx):
         item = self.data_source[idx]
 
-        output = {
-            "label": item['label'],
-            "impath": item['impath'],
-            "index": idx
-        }
+        if self.use_caption:
+            output = {
+                "label": item['label'],
+                "impath": item['impath'],
+                "index": idx,
+                "tokenized_caption": item['tokenized_caption']
+            }
+
+        else:
+            output = {
+                "label": item['label'],
+                "impath": item['impath'],
+                "index": idx
+            }
 
         img0 = read_image(item['impath'])
 

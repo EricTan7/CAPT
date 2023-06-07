@@ -1,17 +1,81 @@
 import argparse
 import torch
 import torch.distributed as dist
+import os
 
-from datasets import DataManager
-from processor import train
+from datasets import DataManager, TensorDataset
+from torch.utils.data import DataLoader
+from processor import train_wandb, train_lpclip, \
+    train_wandb_two_stage, train_wandb_iter, \
+    train_wandb_iter_wiseft, train_wandb_iter_wiseft_val, \
+    train_caption
 from tools.utils import set_random_seed, collect_env_info
 from tools.logger import setup_logger
 from tools.train_utils import *
+
+import wandb
+import warnings
+warnings.filterwarnings("ignore")
+
+
+dataset_name = {
+    "OxfordPets": "oxford_pets",
+    "OxfordFlowers": "oxford_flowers",
+    "FGVCAircraft": "fgvc_aircraft",
+    "DescribableTextures": "dtd",
+    "EuroSAT": "eurosat",
+    "StanfordCars": "stanford_cars",
+    "Food101": "food101",
+    "SUN397": "sun397",
+    "Caltech101": "caltech101",
+    "UCF101": "ucf101",
+    "ImageNet": "imagenet",
+    "ImageNetV2": "imagenetv2",
+    "ImageNetSketch": "imagenet_sketch",
+    "ImageNetA": "imagenet_a",
+    "ImageNetR": "imagenet_r"
+}
+
+
+def getModelSize(model):
+    param_size = 0
+    param_sum = 0
+    trainable_param_sum = 0
+    trainable_param_size = 0
+    for param in model.parameters():
+        param_size += param.nelement() * param.element_size()
+        param_sum += param.nelement()
+        if param.requires_grad:
+            trainable_param_sum += param.nelement()
+            trainable_param_size += param.nelement() * param.element_size()
+    buffer_size = 0
+    buffer_sum = 0
+    for buffer in model.buffers():
+        buffer_size += buffer.nelement() * buffer.element_size()
+        buffer_sum += buffer.nelement()
+    all_size = (param_size + buffer_size) / 1024 / 1024
+    print('params总个数为：{:.3f}'.format(param_sum))
+    print('params大小为：{:.3f}MB'.format(param_size/1024/1024))
+    print('模型总大小为：{:.3f}MB'.format(all_size))
+    print('trainable params总个数为：{:.3f}'.format(trainable_param_sum))
+    print('trainable params大小为：{:.3f}MB'.format(trainable_param_size / 1024 / 1024))
+    return (param_size, param_sum, buffer_size, buffer_sum, all_size)
 
 
 def main(args):
     cfg = setup_cfg(args)
     logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
+
+    # run = wandb.init(project='baseline_caption_bert')    # baseline_ablation  baseline_cattn_vocabloss
+    # # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
+    # # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
+    # #     f'-{cfg.OPTIM.NAME}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
+    # #     f'-lr{cfg.OPTIM.LR}-it{cfg.OPTIM.MAX_ITER}-warmit{cfg.OPTIM.WARMUP_ITER}'
+    #
+    # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.MODEL.TEXT.ENCODER}-{cfg.INPUT.TEXT_AUG}' \
+    #     f'-iter{cfg.OPTIM.MAX_ITER}-lr{cfg.OPTIM.LR}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
+    #     f'-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
+    #     f'-{cfg.OPTIM.NAME}-warmit{cfg.OPTIM.WARMUP_ITER}'
 
     if cfg.SEED >= 0:
         logger.info("Setting fixed seed: {}".format(cfg.SEED))
@@ -35,27 +99,31 @@ def main(args):
     data = DataManager(cfg)
 
     # 2.model ( +optim +sche)
-    # try:
-    #     model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
-    # except:
-    #     raise TypeError(f"Trainer {cfg.TRAINER.NAME} is not available.")
     model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
-    # 3.train
-    train(cfg, model, data, args.local_rank)
 
-    # if args.eval_only:
-    #     trainer.load_model(args.model_dir, epoch=args.load_epoch)
-    #     trainer.test()
-    #     return
+    getModelSize(model)
 
-    # if not args.no_train:
-    #     trainer.train()
+    # image_loader = data.train_loader
+    # val_loader = data.val_loader
+    # test_loader = data.test_loader
+    #
+    # # 3.train
+    # if cfg.TRAINER.NAME in ["lpclip", "lpsam"]:
+    #     train_lpclip(cfg, model, data, args.local_rank)
+    # elif cfg.TRAINER.NAME in ["baseline_cattn_vocabloss_shembed_zsinit_fixedfirst"]:
+    #     train_wandb_two_stage(cfg, model, data, args.local_rank)
+    # elif "caption" in cfg.TRAINER.NAME:
+    #     train_caption(cfg, model, data, image_loader, val_loader, test_loader, args.local_rank)
+    # elif ("wiseft" in cfg.TRAINER.NAME) or ("sattn" in cfg.TRAINER.NAME):
+    #     train_wandb_iter_wiseft_val(cfg, model, data, image_loader, val_loader, test_loader, args.local_rank)
+    # else:
+    #     train_wandb_iter(cfg, model, data, args.local_rank)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=str, default="/data/run01/scz0bkt/datasets/recognition/", help="path to dataset")
-    parser.add_argument("--output-dir", type=str, default="/data/run01/scz0bkt/datasets/recognition/prompt/Baseline_cattn_vocabloss/sweep_hyper/", help="output directory")
+    parser.add_argument("--root", type=str, default="/mnt/sdb/tanhao/recognition/", help="path to dataset")
+    parser.add_argument("--output-dir", type=str, default="/mnt/sdb/tanhao/logs/Baseline/others", help="output directory")
     parser.add_argument(
         "--resume",
         type=str,
@@ -67,7 +135,7 @@ if __name__ == "__main__":
         "--dist-train", type=bool, default=False, help="path to config file"
     )
     parser.add_argument(
-        "--seed", type=int, default=-1, help="only positive value enables a fixed seed"
+        "--seed", type=int, default=1, help="only positive value enables a fixed seed"
     )
     parser.add_argument(
         "--source-domains", type=str, nargs="+", help="source domains for DA/DG"

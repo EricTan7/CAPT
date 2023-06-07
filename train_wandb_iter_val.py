@@ -7,7 +7,8 @@ from datasets import DataManager, TensorDataset
 from torch.utils.data import DataLoader
 from processor import train_wandb, train_lpclip, \
     train_wandb_two_stage, train_wandb_iter, \
-    train_wandb_iter_wiseft, train_wandb_iter_wiseft_val
+    train_wandb_iter_wiseft, train_wandb_iter_wiseft_val, \
+    train_caption
 from tools.utils import set_random_seed, collect_env_info
 from tools.logger import setup_logger
 from tools.train_utils import *
@@ -40,12 +41,16 @@ def main(args):
     cfg = setup_cfg(args)
     logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
 
-    # run = wandb.init(project='baseline_cattn_vocabloss')
-    run = wandb.init(project='baseline_sattn')
+    run = wandb.init(project=args.wandb_proj)    # 'baseline_caption' baseline_ablation  baseline_cattn_vocabloss
     # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
-    run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
-        f'-{cfg.OPTIM.NAME}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
-        f'-lr{cfg.OPTIM.LR}-it{cfg.OPTIM.MAX_ITER}-warmit{cfg.OPTIM.WARMUP_ITER}'
+    # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
+    #     f'-{cfg.OPTIM.NAME}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
+    #     f'-lr{cfg.OPTIM.LR}-it{cfg.OPTIM.MAX_ITER}-warmit{cfg.OPTIM.WARMUP_ITER}'
+
+    run.name = f'{cfg.MODEL.BACKBONE.NAME}-{cfg.DATASET.NAME}-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.MODEL.TEXT.ENCODER}-{cfg.INPUT.TEXT_AUG}' \
+        f'-iter{cfg.OPTIM.MAX_ITER}-lr{cfg.OPTIM.LR}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
+        f'-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
+        f'-{cfg.OPTIM.NAME}-warmit{cfg.OPTIM.WARMUP_ITER}'
 
     if cfg.SEED >= 0:
         logger.info("Setting fixed seed: {}".format(cfg.SEED))
@@ -134,6 +139,8 @@ def main(args):
         train_lpclip(cfg, model, data, args.local_rank)
     elif cfg.TRAINER.NAME in ["baseline_cattn_vocabloss_shembed_zsinit_fixedfirst"]:
         train_wandb_two_stage(cfg, model, data, args.local_rank)
+    elif "caption" in cfg.TRAINER.NAME:
+        train_caption(cfg, model, data, image_loader, val_loader, test_loader, args.local_rank)
     elif ("wiseft" in cfg.TRAINER.NAME) or ("sattn" in cfg.TRAINER.NAME):
         train_wandb_iter_wiseft_val(cfg, model, data, image_loader, val_loader, test_loader, args.local_rank)
     else:
@@ -142,8 +149,8 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=str, default="/data/run01/scz0bkt/datasets/recognition/", help="path to dataset")
-    parser.add_argument("--output-dir", type=str, default="/data/run01/scz0bkt/datasets/recognition/prompt/Baseline_cattn_vocabloss/sweep_hyper/", help="output directory")
+    parser.add_argument("--root", type=str, default="/mnt/sdb/tanhao/recognition/", help="path to dataset")
+    parser.add_argument("--output-dir", type=str, default="/mnt/sdb/tanhao/logs/Baseline/others", help="output directory")
     parser.add_argument(
         "--resume",
         type=str,
@@ -196,6 +203,9 @@ if __name__ == "__main__":
         default=None,
         nargs=argparse.REMAINDER,
         help="modify config options using the command-line",
+    )
+    parser.add_argument(
+        "--wandb-proj", type=str, default="baseline_caption", help="project name of wandb"
     )
     args = parser.parse_args()
     main(args)

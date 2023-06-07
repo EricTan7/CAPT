@@ -9,7 +9,9 @@ from torch.nn import functional as F
 from solver import build_optimizer, build_scheduler, build_scheduler_iter
 from .base import BaseModel
 from models.head import *
-from .bonder import CrossAttnBlock, CrossAttnBlock_nx, CrossAttnBlock_projkv, CrossAttnBlock_nx_projkv
+from .bonder import CrossAttnBlock, CrossAttnBlock_nx, CrossAttnBlock_projkv, CrossAttnBlock_nx_projkv, CrossAttnBlock_nx_pe
+import os.path as osp
+from tools.model import load_checkpoint
 
 from clip import clip
 from clip.simple_tokenizer import SimpleTokenizer as _Tokenizer
@@ -3066,7 +3068,7 @@ class PromptLearner_shembed_zsinit_lscale_wiseft(nn.Module):
 
         return prompts, loss_prompts
 
-# note: to align with new repo, use all tokens
+
 class CustomCLIP_shembed_zsinit_lscale_wiseft(nn.Module):
     def __init__(self, cfg, classnames, clip_model):
         super().__init__()
@@ -3117,10 +3119,6 @@ class CustomCLIP_shembed_zsinit_lscale_wiseft(nn.Module):
         if self.backbone.startswith('RN'):
             image_features = image_features.view(image_features.size(0), image_features.size(1), -1).permute(0,2,1)     # [B,49,2048]
         # vitb16: [B,197,512]
-        # image_features = image_features[:, :self.prompt_learner.num_query_token, :]   # note: use all image tokens for cross attn
-        # image_features = image_features / image_features.norm(dim=-1, keepdim=True)   # note: same as new repo, not normalize before logit head
-        # image_cls = image_cls / image_cls.norm(dim=-1, keepdim=True)
-        # image_features = image_features.float()
 
         prompts, loss_prompts = self.prompt_learner(image_features, image_cls, target)  # [B, 77, 1024]
 
@@ -3193,6 +3191,39 @@ class Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft(BaseModel):
     def forward(self, image, label=None):
         return self.model(image, label)     # logits
 
+    def load_model(self, directory, epoch=None):
+        if not directory:
+            print("Note that load_model() is skipped as no pretrained model is given")
+            return
+
+        names = self.get_model_names()
+
+        # By default, the best model is loaded
+        model_file = "model-best.pth.tar"
+
+        if epoch is not None:
+            model_file = "model.pth.tar-" + str(epoch)
+
+        for name in names:
+            model_path = osp.join(directory, name, model_file)
+
+            if not osp.exists(model_path):
+                raise FileNotFoundError('Model not found at "{}"'.format(model_path))
+
+            checkpoint = load_checkpoint(model_path)
+            state_dict = checkpoint["state_dict"]
+            epoch = checkpoint["epoch"]
+
+            # Ignore fixed token vectors
+            if "token_prefix" in state_dict:
+                del state_dict["token_prefix"]
+
+            if "token_suffix" in state_dict:
+                del state_dict["token_suffix"]
+
+            print("Loading weights to {} " 'from "{}" (epoch = {})'.format(name, model_path, epoch))
+            # set strict=False
+            self._models[name].load_state_dict(state_dict, strict=False)
 
 
 # ===================================== zeroshot init =======================

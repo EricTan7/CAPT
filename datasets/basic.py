@@ -59,6 +59,52 @@ def read_split(filepath, path_prefix):
     return train, val, test
 
 
+def read_split_imagenet(filepath, path_prefix):
+    '''Read train/val/test split from a json file.'''
+    def _convert(items):
+        '''Convert a list of items to a list of dict.'''
+        lst = []
+        for impath, label, classname in items:
+            impath = os.path.join(path_prefix, impath)
+            check_isfile(impath)
+            item = {'impath': impath,
+                    'label': int(label),
+                    'classname': classname}
+            lst.append(item)
+        return lst
+
+    print(f"Reading split from {filepath}")
+    split = load_json(filepath)
+    val = _convert(split["val"])
+
+    return val
+
+
+def read_split_caption(filepath, path_prefix, caption, tokenized_caption):
+    '''Read train/val/test split from a json file.'''
+    def _convert(items):
+        '''Convert a list of items to a list of dict.'''
+        lst = []
+        for imname, label, classname in items:
+            impath = os.path.join(path_prefix, imname)
+            check_isfile(impath)
+            item = {'impath': impath,
+                    'label': int(label),
+                    'classname': classname,
+                    'caption': caption[imname] if imname in caption.keys() else None,   # test set dont have captions
+                    'tokenized_caption': tokenized_caption[imname] if imname in caption.keys() else None}
+            lst.append(item)
+        return lst
+
+    print(f"Reading split from {filepath}")
+    split = load_json(filepath)
+    train = _convert(split["train"])
+    val = _convert(split["val"])
+    test = _convert(split["test"])
+
+    return train, val, test
+
+
 def save_split(train, val, test, filepath, path_prefix):
     '''Save train/val/test split to a json file.'''
     def _extract(items):

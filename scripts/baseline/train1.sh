@@ -1,16 +1,7 @@
-#!/bin/sh
-#SBATCH --gpus=1
-
-source activate ppt
-
-# for DATASET in caltech101 dtd fgvc_aircraft food101 eurosat ucf101 oxford_flowers oxford_pets stanford_cars imagenet sun397
-for DATASET in fgvc_aircraft eurosat oxford_pets sun397
+for SHOTS in 16 8 4 2 1
 do
-    for SHOTS in 16 8 4 2 1
-    do
-        WANDB_API_KEY=40afa4ca3f265a034bccdf4e176b2f2254081f21 WANDB_MODE=offline python train_wandb_iter_val.py \
-        --dataset-config-file /data/run01/scz0bkt/code/Baseline/configs/datasets/${DATASET}.yaml \
-        --config-file /data/run01/scz0bkt/code/Baseline/configs/trainers/Baseline_sattn/vit_b16.yaml \
-        DATASET.NUM_SHOTS ${SHOTS}
-    done
+    CUDA_VISIBLE_DEVICES=0 python train_wandb_iter_val.py \
+    --dataset-config-file /home/tanhao/Baseline/configs/datasets/imagenet_wval.yaml \
+    --config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_l14.yaml \
+    DATASET.NUM_SHOTS ${SHOTS}
 done

@@ -13,7 +13,11 @@ from models import Baseline, lpclip, Baseline_cattn, Baseline_cattn_vocabloss, \
     Baseline_cattn_vocabloss_shembed_zsinit_mul_lscale_wiseft, Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_nxcattn, \
     Baseline_cattn_vocabloss_shembed_zsinit_lscale_lnable_wiseft_nxcattn, Baseline_cattn_coophead, \
     Baseline_cattn_vocabloss_shembed_zsinit_lscale_fixed, Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_wotextloss, \
-    Baseline_sattn
+    Baseline_sattn, Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_idfc, Baseline_cattn_wiseft_template_ensemble, \
+    Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_add, Baseline_caption_wiseft, Baseline_caption_wiseft_multi_stream, \
+    Baseline_abla_caption_only, Baseline_abla_multi_wo_caption, Baseline_caption_wiseft_nxcattn, Baseline_caption_wiseft_nxcattn_add, \
+    Baseline_caption_wiseft_nxcattn_auxi, Baseline_caption_wiseft_multi_stream_projector, Baseline_caption_wiseft_multi_stream_bert, \
+    Baseline_caption_wiseft_multi_stream_t5, Baseline_caption_wiseft_multi_stream_rn
 from configs import get_cfg_default
 import logging
 
@@ -48,7 +52,21 @@ MODELS = {
     'baseline_cattn_vocabloss_shembed_zsinit_lscale_fixed': Baseline_cattn_vocabloss_shembed_zsinit_lscale_fixed,
     'baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_wotextloss': Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_wotextloss,
     'baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_wiseftval': Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft,
-    'baseline_sattn': Baseline_sattn
+    'baseline_sattn': Baseline_sattn,
+    'baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_add': Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_add,
+    'baseline_cattn_wiseft_template_ensemble': Baseline_cattn_wiseft_template_ensemble,
+    'baseline_caption_wiseft': Baseline_caption_wiseft,
+    'baseline_caption_wiseft_multi_stream': Baseline_caption_wiseft_multi_stream,
+    'baseline_abla_caption_only': Baseline_abla_caption_only,
+    'baseline_abla_multi_wo_caption': Baseline_abla_multi_wo_caption,
+    'baseline_caption_wiseft_multi_stream_headval': Baseline_caption_wiseft_multi_stream,
+    'baseline_caption_wiseft_nxcattn': Baseline_caption_wiseft_nxcattn,
+    'baseline_caption_wiseft_nxcattn_add': Baseline_caption_wiseft_nxcattn_add,
+    'baseline_caption_wiseft_nxcattn_auxi': Baseline_caption_wiseft_nxcattn_auxi,
+    'baseline_caption_wiseft_multi_stream_projector': Baseline_caption_wiseft_multi_stream_projector,
+    'baseline_caption_wiseft_multi_stream_bert': Baseline_caption_wiseft_multi_stream_bert,
+    'baseline_caption_wiseft_multi_stream_t5': Baseline_caption_wiseft_multi_stream_t5,
+    'baseline_caption_wiseft_multi_stream_rn': Baseline_caption_wiseft_multi_stream_rn
 }
 
 
@@ -157,6 +175,11 @@ def extend_cfg(cfg):
     cfg.MODEL.BONDER = CN()
     cfg.MODEL.BONDER.DEPTH = 1
     cfg.MODEL.BONDER.NUM_Q = 32
+    cfg.MODEL.CAPTION = False
+    cfg.TRAIN.VAL_WISEFT = True
+
+    cfg.MODEL.TEXT = CN()
+    cfg.MODEL.TEXT.ENCODER = 'clip-text'
 
 
 def setup_cfg(args):

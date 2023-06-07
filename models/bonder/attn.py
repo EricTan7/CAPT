@@ -163,6 +163,92 @@ class CrossAttention_projkv(nn.Module):
         return query
 
 
+class CrossAttention_projk(nn.Module):
+    """
+    Cross-attention
+    """
+    def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0.):
+        super().__init__()
+        self.num_heads = num_heads
+        head_dim = dim // num_heads
+        self.scale = qk_scale or head_dim ** -0.5
+
+        self.attn_drop = nn.Dropout(attn_drop)
+        self.proj = nn.Linear(dim, dim)
+        self.proj_drop = nn.Dropout(proj_drop)
+
+        self.norm_text = nn.LayerNorm(dim)
+        self.norm_img = nn.LayerNorm(dim)
+
+        self.q = nn.Linear(dim, dim, bias=qkv_bias)
+        self.k = nn.Linear(dim, dim, bias=qkv_bias)
+        self.dim = dim
+
+    def forward(self, query, kv):
+        # query:[B, n_query, dim]
+        # img_fea: [B, n_tkn, dim]
+
+        # 1. project q, insert a learnable layer
+        query = self.q(query)
+        k = self.k(kv)
+        # kv = self.kv(kv)
+        # k = kv[:, :, :self.dim]
+        # v = kv[:, :, self.dim:]
+
+        attn = (query @ k.transpose(1,2)) * self.scale   # [B, n_query, n_tkn]
+        attn = attn.softmax(dim=-1)
+        attn = self.attn_drop(attn)
+
+        query = attn @ kv    # [B, n_query, dim]
+        query = self.proj(query)
+        query = self.proj_drop(query)
+
+        return query
+
+class CrossAttention_projkv_bert(nn.Module):
+    """
+    Cross-attention
+    """
+    def __init__(self, dim, num_heads=8, qkv_bias=False, qk_scale=None, attn_drop=0., proj_drop=0., kv_dim=512):
+        super().__init__()
+        self.num_heads = num_heads
+        head_dim = dim // num_heads
+        # NOTE scale factor was wrong in my original version, can set manually to be compat with prev weights
+        self.scale = qk_scale or head_dim ** -0.5
+
+        self.attn_drop = nn.Dropout(attn_drop)
+        self.proj = nn.Linear(dim, dim)
+        self.proj_drop = nn.Dropout(proj_drop)
+
+        self.norm_text = nn.LayerNorm(dim)
+        self.norm_img = nn.LayerNorm(dim)
+
+        self.q = nn.Linear(dim, dim, bias=qkv_bias)
+        self.kv = nn.Linear(kv_dim, dim*2, bias=qkv_bias)
+        self.dim = dim
+        self.kv_dim = kv_dim
+
+    def forward(self, query, kv):
+        # query:[B, n_query, dim]
+        # img_fea: [B, n_tkn, dim]
+
+        # 1. project q, insert a learnable layer
+        query = self.q(query)
+        kv = self.kv(kv)
+        k = kv[:, :, :self.dim]
+        v = kv[:, :, self.dim:]
+
+        attn = (query @ k.transpose(1,2)) * self.scale   # [B, n_query, n_tkn]
+        attn = attn.softmax(dim=-1)
+        attn = self.attn_drop(attn)
+
+        query = attn @ v    # [B, n_query, dim]
+        query = self.proj(query)
+        query = self.proj_drop(query)
+
+        return query
+
+
 # todo: self-attention -> cross-attention
 # todo: cross-attention -> self-attention
 # todo: flamingo
@@ -293,6 +379,52 @@ class CrossAttnBlock_sam(nn.Module):
         return query    # [B, n_query, dim]
 
 
+class CrossAttnBlock_projkv_pe_rn(nn.Module):
+    """
+    input: embedded_tokens
+            (x)  tokens -> projection(Linear), project to new Q,K,V -> LN + Cross-Attention + LN + MLP
+            (√)  tokens -> LN + self-attn -> LN + cross-attn -> LN + MLP
+          residual:     |------------------| |--------------| |--------|
+    output: tokens
+    """
+    def __init__(self, dim, input_size=(32, 512), num_heads=8, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
+                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, kv_dim=2048):
+        super(CrossAttnBlock_projkv_pe_rn, self).__init__()
+        self.self_attn_layer = Attention(dim=dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
+        self.cross_attn = CrossAttention_projkv_bert(dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop, kv_dim=kv_dim)
+
+        self.mlp = Mlp(in_features=dim, hidden_features=dim, act_layer=act_layer, drop=drop)
+
+        self.norm1 = norm_layer(dim)
+        self.norm2_q = norm_layer(dim)
+        self.norm2_kv = norm_layer(kv_dim)
+
+        self.norm_mlp = norm_layer(dim)
+
+        self.pos_embed = nn.Parameter(torch.zeros(input_size))
+
+    def forward(self, query, img_fea):
+        if self.pos_embed is not None:
+            pos_embed = self.pos_embed.expand(query.size(0), -1, -1)
+            query = query + pos_embed
+
+        # query:[B, n_query, dim]
+        # img_fea: [B, n_tkn, dim]
+
+        # LN + self-attn + residual
+        query = query + self.self_attn_layer(self.norm1(query))     # flamingo: + tanh(alpha)
+
+        # LN + cross-attn + residual
+        query = query + self.cross_attn(self.norm2_q(query), self.norm2_kv(img_fea))
+
+        # LN + MLP + residual
+        # text_tokens = text_tokens + self.mlp_text(self.norm_final(text_tokens))
+        # img_tokens = img_tokens + self.mlp_img(self.norm_final(img_tokens))
+        query = query + self.mlp(self.norm_mlp(query))
+
+        return query    # [B, n_query, dim]
+
+
 class CrossAttnBlock_projkv(nn.Module):
     """
     input: embedded_tokens
@@ -333,7 +465,47 @@ class CrossAttnBlock_projkv(nn.Module):
         return query    # [B, n_query, dim]
 
 
-# todo: positional embedding
+class CrossAttnBlock_projk(nn.Module):
+    """
+    input: embedded_tokens
+            (x)  tokens -> projection(Linear), project to new Q,K,V -> LN + Cross-Attention + LN + MLP
+            (√)  tokens -> LN + self-attn -> LN + cross-attn -> LN + MLP
+          residual:     |------------------| |--------------| |--------|
+    output: tokens
+    """
+    def __init__(self, dim, num_heads=8, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
+                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm,):
+        super(CrossAttnBlock_projk, self).__init__()
+        self.self_attn_layer = Attention(dim=dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
+        self.cross_attn = CrossAttention_projkv(dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
+
+        self.mlp = Mlp(in_features=dim, hidden_features=dim, act_layer=act_layer, drop=drop)
+
+        self.norm1 = norm_layer(dim)
+        self.norm2_q = norm_layer(dim)
+        self.norm2_kv = norm_layer(dim)
+
+        self.norm_mlp = norm_layer(dim)
+
+    def forward(self, query, img_fea):
+        # query:[B, n_query, dim]
+        # img_fea: [B, n_tkn, dim]
+
+        # LN + self-attn + residual
+        query = query + self.self_attn_layer(self.norm1(query))     # flamingo: + tanh(alpha)
+
+        # LN + cross-attn + residual
+        query = query + self.cross_attn(self.norm2_q(query), self.norm2_kv(img_fea))
+
+        # LN + MLP + residual
+        # text_tokens = text_tokens + self.mlp_text(self.norm_final(text_tokens))
+        # img_tokens = img_tokens + self.mlp_img(self.norm_final(img_tokens))
+        query = query + self.mlp(self.norm_mlp(query))
+
+        return query    # [B, n_query, dim]
+
+
+# ==================== nx cattn =======================
 class CrossAttnBlock_nx(nn.Module):
     """
     input: embedded_tokens
@@ -425,6 +597,165 @@ class CrossAttnBlock_nx_pe(nn.Module):
 
         for blk in self.blocks:
             query = blk(query, img_fea)
+
+        return query    # [B, n_query, dim]
+
+
+class CrossAttnBlock_nx_projk_pe(nn.Module):
+    """
+    input: embedded_tokens
+            (x)  tokens -> projection(Linear), project to new Q,K,V -> LN + Cross-Attention + LN + MLP
+            (√)  tokens -> LN + self-attn -> LN + cross-attn -> LN + MLP
+          residual:     |------------------| |--------------| |--------|
+    output: tokens
+    """
+    def __init__(self, dim, input_size=(32, 512), num_heads=8, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
+                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, depth=1):
+        super(CrossAttnBlock_nx_projk_pe, self).__init__()
+
+        self.pos_embed = nn.Parameter(torch.zeros(input_size))
+        self.blocks = nn.ModuleList()
+        for i in range(depth):
+            blk = CrossAttnBlock_projk(dim, num_heads, mlp_ratio, qkv_bias, qk_scale, drop, attn_drop,
+                                drop_path, act_layer, norm_layer)
+            self.blocks.append(blk)
+
+    def forward(self, query, img_fea):
+        if self.pos_embed is not None:
+            pos_embed = self.pos_embed.expand(query.size(0), -1, -1)
+            query = query + pos_embed
+
+        for blk in self.blocks:
+            query = blk(query, img_fea)
+
+        return query    # [B, n_query, dim]
+
+
+class CrossAttnBlock_nx_pe_auxi(nn.Module):
+    """
+    input: embedded_tokens
+            (x)  tokens -> projection(Linear), project to new Q,K,V -> LN + Cross-Attention + LN + MLP
+            (√)  tokens -> LN + self-attn -> LN + cross-attn -> LN + MLP
+          residual:     |------------------| |--------------| |--------|
+    output: tokens
+    """
+    def __init__(self, dim, input_size=(32, 512), num_heads=8, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
+                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, depth=1):
+        super(CrossAttnBlock_nx_pe_auxi, self).__init__()
+        # self.blk = nn.Sequential(
+        #     *[CrossAttnBlock_v1(dim, num_heads, mlp_ratio, qkv_bias, qk_scale, drop, attn_drop,
+        #                         drop_path, act_layer, norm_layer) for _ in range(depth)]
+        # )
+        self.pos_embed = nn.Parameter(torch.zeros(input_size))
+        self.blocks = nn.ModuleList()
+        for i in range(depth):
+            blk = CrossAttnBlock(dim, num_heads, mlp_ratio, qkv_bias, qk_scale, drop, attn_drop,
+                                drop_path, act_layer, norm_layer)
+            self.blocks.append(blk)
+
+    def forward(self, query, img_fea, instance_target=None, criterion=None, vocab_size=None, vocab_head=None, is_training=False):
+        if self.pos_embed is not None:
+            pos_embed = self.pos_embed.expand(query.size(0), -1, -1)
+            query = query + pos_embed
+
+        loss_instance = torch.tensor(0.).to(query.device)
+        for blk in self.blocks:
+            query = blk(query, img_fea)
+            if is_training:
+                query_vocab = vocab_head(query)  # [B, num_query, vocab_size]
+                loss_instance += criterion(
+                    query_vocab.view(-1, vocab_size),
+                    instance_target.view(-1)
+                )
+
+        return query, loss_instance    # [B, n_query, dim]
+
+
+class CrossAttnBlock_nx_projk_pe_auxi(nn.Module):
+    """
+    input: embedded_tokens
+            (x)  tokens -> projection(Linear), project to new Q,K,V -> LN + Cross-Attention + LN + MLP
+            (√)  tokens -> LN + self-attn -> LN + cross-attn -> LN + MLP
+          residual:     |------------------| |--------------| |--------|
+    output: tokens
+    """
+    def __init__(self, dim, input_size=(32, 512), num_heads=8, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
+                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, depth=1):
+        super(CrossAttnBlock_nx_projk_pe_auxi, self).__init__()
+        # self.blk = nn.Sequential(
+        #     *[CrossAttnBlock_v1(dim, num_heads, mlp_ratio, qkv_bias, qk_scale, drop, attn_drop,
+        #                         drop_path, act_layer, norm_layer) for _ in range(depth)]
+        # )
+        self.pos_embed = nn.Parameter(torch.zeros(input_size))
+        self.blocks = nn.ModuleList()
+        for i in range(depth):
+            blk = CrossAttnBlock_projk(dim, num_heads, mlp_ratio, qkv_bias, qk_scale, drop, attn_drop,
+                                drop_path, act_layer, norm_layer)
+            self.blocks.append(blk)
+
+    def forward(self, query, img_fea, instance_target=None, criterion=None, vocab_size=None, vocab_head=None, is_training=False):
+        if self.pos_embed is not None:
+            pos_embed = self.pos_embed.expand(query.size(0), -1, -1)
+            query = query + pos_embed
+
+        loss_instance = torch.tensor(0.).to(query.device)
+        loss_final = torch.tensor(0.).to(query.device)
+        for blk in self.blocks:
+            query = blk(query, img_fea)
+            if is_training:
+                query_vocab = vocab_head(query)  # [B, num_query, vocab_size]
+                loss_final = criterion(
+                    query_vocab.view(-1, vocab_size),
+                    instance_target.view(-1)
+                )
+                loss_instance += loss_final
+
+        return query, loss_instance, loss_final    # [B, n_query, dim]
+
+
+
+class CrossAttnBlock_projkv_pe_bert(nn.Module):
+    """
+    input: embedded_tokens
+            (x)  tokens -> projection(Linear), project to new Q,K,V -> LN + Cross-Attention + LN + MLP
+            (√)  tokens -> LN + self-attn -> LN + cross-attn -> LN + MLP
+          residual:     |------------------| |--------------| |--------|
+    output: tokens
+    """
+    def __init__(self, dim, input_size=(32, 512), num_heads=8, mlp_ratio=4., qkv_bias=False, qk_scale=None, drop=0., attn_drop=0.,
+                 drop_path=0., act_layer=nn.GELU, norm_layer=nn.LayerNorm, kv_dim=512):
+        super(CrossAttnBlock_projkv_pe_bert, self).__init__()
+        self.self_attn_layer = Attention(dim=dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop)
+        self.cross_attn = CrossAttention_projkv_bert(dim, num_heads=num_heads, qkv_bias=qkv_bias, qk_scale=qk_scale, attn_drop=attn_drop, proj_drop=drop, kv_dim=kv_dim)
+
+        self.mlp = Mlp(in_features=dim, hidden_features=dim, act_layer=act_layer, drop=drop)
+
+        self.norm1 = norm_layer(dim)
+        self.norm2_q = norm_layer(dim)
+        self.norm2_kv = norm_layer(kv_dim)
+
+        self.norm_mlp = norm_layer(dim)
+
+        self.pos_embed = nn.Parameter(torch.zeros(input_size))
+
+    def forward(self, query, img_fea):
+        if self.pos_embed is not None:
+            pos_embed = self.pos_embed.expand(query.size(0), -1, -1)
+            query = query + pos_embed
+
+        # query:[B, n_query, dim]
+        # img_fea: [B, n_tkn, dim]
+
+        # LN + self-attn + residual
+        query = query + self.self_attn_layer(self.norm1(query))     # flamingo: + tanh(alpha)
+
+        # LN + cross-attn + residual
+        query = query + self.cross_attn(self.norm2_q(query), self.norm2_kv(img_fea))
+
+        # LN + MLP + residual
+        # text_tokens = text_tokens + self.mlp_text(self.norm_final(text_tokens))
+        # img_tokens = img_tokens + self.mlp_img(self.norm_final(img_tokens))
+        query = query + self.mlp(self.norm_mlp(query))
 
         return query    # [B, n_query, dim]
 

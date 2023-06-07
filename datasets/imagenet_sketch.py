@@ -1,13 +1,13 @@
 import os
-
-from dassl.data.datasets import DATASET_REGISTRY, Datum, DatasetBase
-from dassl.utils import listdir_nohidden
+import pickle
+from collections import OrderedDict
+from .basic import Benchmark
+from tools.utils import listdir_nohidden
 
 from .imagenet import ImageNet
 
 
-@DATASET_REGISTRY.register()
-class ImageNetSketch(DatasetBase):
+class ImageNetSketch(Benchmark):
     """ImageNet-Sketch.
 
     This dataset is used for testing only.
@@ -25,7 +25,7 @@ class ImageNetSketch(DatasetBase):
 
         data = self.read_data(classnames)
 
-        super().__init__(train_x=data, test=data)
+        super().__init__(train=data, test=data)
 
     def read_data(self, classnames):
         image_dir = self.image_dir
@@ -37,7 +37,9 @@ class ImageNetSketch(DatasetBase):
             classname = classnames[folder]
             for imname in imnames:
                 impath = os.path.join(image_dir, folder, imname)
-                item = Datum(impath=impath, label=label, classname=classname)
+                item = {'impath': impath,
+                        'label': int(label),
+                        'classname': classname}
                 items.append(item)
 
         return items

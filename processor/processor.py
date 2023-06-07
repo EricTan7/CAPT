@@ -1383,8 +1383,13 @@ def train_wandb_iter_wiseft_val(cfg, model, data, image_loader,
                f'test loss (wiseft_{ratio})': test_wiseft_loss,
                'test loss (wiseft_1.0)': test_wiseft_loss2})
 
+    # save the best model
+    sdir = cfg.OUTPUT_DIR
+    model.save_model(0, sdir, is_best=True)
 
-def val_wiseft(cfg, model, val_loader):
+
+# using wiseft head to do early stopping
+def val_wiseft_head(cfg, model, val_loader):
     logger = logging.getLogger(cfg.TRAINER.NAME)
     evaluator = Classification(cfg, logger)
     evaluator_wiseft = Classification(cfg, logger)
@@ -1411,6 +1416,36 @@ def val_wiseft(cfg, model, val_loader):
 
     # return evaluator.evaluate(), loss_meter.avg
     return evaluator_wiseft.evaluate(), loss_wiseft_meter.avg
+
+
+# using head to do early stopping
+def val_head(cfg, model, val_loader):
+    logger = logging.getLogger(cfg.TRAINER.NAME)
+    evaluator = Classification(cfg, logger)
+    evaluator_wiseft = Classification(cfg, logger)
+    criterion = nn.CrossEntropyLoss()
+    loss_meter = AverageMeter()
+    loss_wiseft_meter = AverageMeter()
+
+    ratio=0.5
+    logger.info(f"Evaluate on the *val* set")
+    head = deepcopy(model.model.cls_head.fc)
+    zs_weights = deepcopy(model.model.zs_weights)  # check if need .clone(): no
+    wiseft_weights = (1 - ratio) * head.weight.data + ratio * zs_weights
+    model.model.wiseft_head.fc.weight.data = wiseft_weights
+    for batch_idx, batch in enumerate(tqdm(val_loader)):
+        with torch.no_grad():
+            image, label = parse_batch(batch)
+            logits, logits_wiseft, _ = model(image)
+            loss = criterion(logits, label)
+            loss_wiseft = criterion(logits_wiseft, label)
+            loss_meter.update(loss.item(), image.shape[0])
+            loss_wiseft_meter.update(loss_wiseft.item(), image.shape[0])
+            evaluator.process(logits, label)
+            evaluator_wiseft.process(logits_wiseft, label)
+
+    return evaluator.evaluate(), loss_meter.avg
+    # return evaluator_wiseft.evaluate(), loss_wiseft_meter.avg
 
 
 def test_wiseft_val(cfg, model, test_loader, ratio=0.5):
@@ -1445,3 +1480,201 @@ def test_wiseft_val(cfg, model, test_loader, ratio=0.5):
 
     return evaluator.evaluate(), evaluator_wiseft.evaluate(), evaluator_wiseft2.evaluate(),\
            loss_meter.avg, loss_wiseft_meter.avg, loss_wiseft_meter2.avg
+
+
+# train_wandb_iter_wiseft_val
+def train_caption(cfg, model, data, image_loader, val_loader, test_loader, local_rank):
+    logger = logging.getLogger(cfg.TRAINER.NAME)
+    optimizer = model.optim
+    scheduler = model.sched
+    optimizer_fc = None
+    try:
+        optimizer_fc = model.optim_fc
+    except:
+        pass
+
+    if device:
+        model.to(local_rank)
+        if cfg.TRAIN.DIST_TRAIN and torch.cuda.device_count() > 1:
+            logger.info("Using {} GPUs for training".format(torch.cuda.device_count()))
+            # model, optimizer = amp.initialize(model, optimizer, opt_level="O1")
+            model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
+            model = nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], find_unused_parameters=True)
+    tot_iter = cfg.OPTIM.MAX_ITER
+
+    # 1. loss
+    criterion = nn.CrossEntropyLoss()
+
+    # 2. meter()
+    loss_meter = AverageMeter()
+    cls_loss_meter = AverageMeter()
+    category_loss_meter = AverageMeter()
+    instance_loss_meter = AverageMeter()
+    acc_meter = AverageMeter()
+    batch_time = AverageMeter()
+    scaler = GradScaler()
+
+    image_loader_iter = iter(image_loader)
+    best_val_dict = {
+        "iter": 1,
+        "val_acc": 0.,
+        "model": None
+    }
+
+    for iters in range(1, tot_iter+1):
+        start = time.time()
+        # update lr
+        scheduler.step()
+        try:
+            image, label, caption = parse_batch_caption(next(image_loader_iter))
+        except StopIteration:
+            image_loader_iter = iter(image_loader)
+            image, label, caption = parse_batch_caption(next(image_loader_iter))
+
+        if "auxi" in cfg.TRAINER.NAME:
+            output, loss_category, loss_instance, loss_final = model(image, label, caption)
+        else:
+            output, loss_category, loss_instance = model(image, label, caption)
+        loss_prompts = loss_category + loss_instance
+        loss = criterion(output, label) + loss_prompts
+        loss_cls = loss - loss_prompts
+        # loss = criterion(output, label)
+        loss.backward()
+        optimizer.step()
+        optimizer.zero_grad()
+        if optimizer_fc is not None:
+            optimizer_fc.step()
+            optimizer_fc.zero_grad()
+
+        if cfg.TRAIN.DIST_TRAIN and torch.cuda.device_count() > 1:
+            loss = reduce_value(loss, average=True)
+
+        acc = compute_accuracy(output, label, topk=(1,))[0].item()
+
+        loss_meter.update(loss.item(), image.shape[0])
+        cls_loss_meter.update(loss_cls.item(), image.shape[0])
+        category_loss_meter.update(loss_category.item(), image.shape[0])
+        if "auxi" in cfg.TRAINER.NAME:
+            instance_loss_meter.update(loss_final.item(), image.shape[0])
+        else:
+            instance_loss_meter.update(loss_instance.item(), image.shape[0])
+        acc_meter.update(acc, 1)
+
+        # compute time
+        # torch.cuda.synchronize()
+        batch_time.update(time.time() - start)
+
+        # log lr
+        wandb.log({'lr': model.get_current_lr()})
+
+        meet_freq = iters % cfg.TRAIN.PRINT_FREQ == 0
+        if meet_freq:
+            if cfg.TRAIN.DIST_TRAIN and dist.get_rank() != 0:
+                pass
+            else:
+                nb_remain = tot_iter - iters
+                eta_seconds = batch_time.avg * nb_remain
+                eta = str(datetime.timedelta(seconds=int(eta_seconds)))
+
+                info = []
+                info += [f"Iter [{iters}/{tot_iter}]"]
+                info += [f"time {batch_time.val:.3f} ({batch_time.avg:.3f})"]
+                info += [f"loss {loss_meter.val:.3f} ({loss_meter.avg:.3f})"]
+                info += [f"cls_loss {cls_loss_meter.val:.3f} ({cls_loss_meter.avg:.3f})"]
+                info += [f"category_loss {category_loss_meter.val:.3f} ({category_loss_meter.avg:.3f})"]
+                info += [f"instance_loss {instance_loss_meter.val:.3f} ({instance_loss_meter.avg:.3f})"]
+                info += [f"acc {acc_meter.val:.3f} ({acc_meter.avg:.3f})"]
+                if cfg.TRAIN.DIST_TRAIN and torch.cuda.device_count() > 1:
+                    info += [f"lr {model.module.get_current_lr():.4e}"]
+                else:
+                    info += [f"lr {model.get_current_lr():.4e}"]
+                if cfg.TRAINER.NAME == 'baseline_cattn_vocabloss_shembed_zsinit_lscale_lnable_wiseft_nxcattn':
+                    info += [f"lscale {model.model.cls_head.logit_scale:.4e}"]
+                info += [f"eta {eta}"]
+                logger.info(" ".join(info))
+
+
+            wandb.log({'train loss': loss_meter.val,
+                       'train acc': acc_meter.val,
+                       'train cls loss': cls_loss_meter.val,
+                       'train category loss': category_loss_meter.val,
+                       'train instance loss': instance_loss_meter.val,
+                       'iter': iters
+                       })
+
+        # 2.meet epoch: save checkpoint
+        sdir = cfg.OUTPUT_DIR
+        if iters % cfg.TRAIN.SAVE_FREQ == 0:
+            if cfg.TRAIN.DIST_TRAIN and dist.get_rank() != 0:
+                pass
+            else:
+                if cfg.TRAIN.DIST_TRAIN and torch.cuda.device_count() > 1:
+                    model.module.save_model(iters, sdir, is_best=False)
+                else:
+                    model.save_model(iters, sdir, is_best=False)
+
+        # 3.meet epoch: do test
+        if (iters % cfg.TRAIN.TEST_FREQ == 0) or iters == 1:
+            if cfg.TRAIN.DIST_TRAIN and dist.get_rank() != 0:
+                pass
+            else:
+                if cfg.TRAIN.DIST_TRAIN and torch.cuda.device_count() > 1:
+                    model.module.set_model_mode("test")
+                    if cfg.TRAIN.VAL_WISEFT:
+                        results, test_loss = val_wiseft_head(cfg, model, val_loader)
+                    else:
+                        results, test_loss = val_head(cfg, model, val_loader)
+                    model.module.set_model_mode("train")
+                else:
+                    model.set_model_mode("test")
+                    if cfg.TRAIN.VAL_WISEFT:
+                        results, test_loss = val_wiseft_head(cfg, model, val_loader)
+                    else:
+                        results, test_loss = val_head(cfg, model, val_loader)
+                    model.set_model_mode("train")
+                if results["accuracy"] > best_val_dict["val_acc"]:
+                    best_val_dict["iter"] = iters
+                    best_val_dict["val_acc"] = results["accuracy"]
+                    best_val_dict["model"] = deepcopy(model.state_dict())
+
+                wandb.log({'val acc': results["accuracy"],
+                           'val loss': test_loss,
+                           'best val iter': best_val_dict["iter"]})
+
+                wandb.log({'test acc': 0.,
+                           'test acc (wiseft_0.5)': 0.,
+                           'test acc (wiseft_1.0)': 0.,
+                           'test loss': 0.,
+                           'test loss (wiseft_0.5)': 0.,
+                           'test loss (wiseft_1.0)': 0.})
+
+    # final: test using the best val model
+    model.load_state_dict(best_val_dict["model"])
+    ratio = 0.5
+    if cfg.TRAIN.DIST_TRAIN and torch.cuda.device_count() > 1:
+        model.module.set_model_mode("test")
+        results, results_wiseft, results_wiseft2, test_loss, test_wiseft_loss, test_wiseft_loss2 = test_wiseft_val(cfg, model, test_loader, ratio)
+    else:
+        model.set_model_mode("test")
+        results, results_wiseft, results_wiseft2, test_loss, test_wiseft_loss, test_wiseft_loss2 = test_wiseft_val(cfg, model, test_loader, ratio)
+
+    wandb.log({'test acc': results["accuracy"],
+               f'test acc (wiseft_{ratio})': results_wiseft["accuracy"],
+               'test acc (wiseft_1.0)': results_wiseft2["accuracy"],
+               'test loss': test_loss,
+               f'test loss (wiseft_{ratio})': test_wiseft_loss,
+               'test loss (wiseft_1.0)': test_wiseft_loss2})
+
+    # save the best model
+    # sdir = cfg.OUTPUT_DIR
+    # model.save_model(0, sdir, is_best=True)
+
+
+def parse_batch_caption(batch):
+    input = batch["img"]
+    label = batch["label"]
+    caption = batch['tokenized_caption']
+    input = input.to(device)
+    label = label.to(device)
+    caption = caption.to(device)
+    return input, label, caption

@@ -2,16 +2,79 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="73654d5f-40a7-453e-bbea-5ebcbc693238" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_sattn/vit_b16.yaml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/models/baseline_sattn.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/datasets/imagenet_wval.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_caption/rn50.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_b16.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_b16_caption_only.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_b16_headval.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_b16_multi_stream.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_b16_multi_stream_add.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_b16_multi_stream_nx.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_b16_multi_stream_nx_auxi.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_b16_multi_stream_projector.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_b16_multi_wo_caption.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_l14.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_l14_wo_caption.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_caption_bert/vit_b16_bert_base.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_caption_bert/vit_b16_bert_large.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_caption_t5/vit_b16_t5_base.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_caption_t5/vit_l14_t5_base.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_final_v1/vit_b16.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_final_v1/vit_b16_add.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/configs/trainers/Baseline_final_v1/vit_b16_ensemble.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/datasets/extraction/convert_path.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/datasets/extraction/preprocess_caption.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/models/baseline_caption.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/models/baseline_caption_bert.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/models/baseline_caption_t5.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/models/baseline_final_v1.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/baseline/train11.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/baseline/train12.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/baseline/train13.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/baseline/train14.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/baseline/train15.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/baseline/train16.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/baseline/train9.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/scripts/baseline/train_dummy.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/test_xdomain.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/clip/clip.py" beforeDir="false" afterPath="$PROJECT_DIR$/clip/clip.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets/basic.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/basic.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets/caltech101.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/caltech101.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets/dtd.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/dtd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets/eurosat.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/eurosat.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets/fgvc_aircraft.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/fgvc_aircraft.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets/food101.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/food101.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/datasets/imagenet.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/imagenet.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets/imagenet_a.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/imagenet_a.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets/imagenet_r.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/imagenet_r.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets/imagenet_sketch.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/imagenet_sketch.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets/imagenetv2.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/imagenetv2.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets/make_dataloader.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/make_dataloader.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets/oxford_flowers.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/oxford_flowers.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets/oxford_pets.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/oxford_pets.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets/stanford_cars.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/stanford_cars.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets/sun397.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/sun397.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets/templates/template_mining.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/templates/template_mining.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/datasets/ucf101.py" beforeDir="false" afterPath="$PROJECT_DIR$/datasets/ucf101.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/debug.py" beforeDir="false" afterPath="$PROJECT_DIR$/debug.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/models/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/baseline_cattn_vocabloss.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/baseline_cattn_vocabloss.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/bonder/attn.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/bonder/attn.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/models/head/cls_heads.py" beforeDir="false" afterPath="$PROJECT_DIR$/models/head/cls_heads.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/processor/__init__.py" beforeDir="false" afterPath="$PROJECT_DIR$/processor/__init__.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/processor/processor.py" beforeDir="false" afterPath="$PROJECT_DIR$/processor/processor.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/baseline/train1.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/baseline/train1.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/baseline/train2.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/baseline/train2.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/baseline/train3.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/baseline/train3.sh" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/scripts/baseline/train4.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/baseline/train4.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/baseline/train5.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/baseline/train5.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/baseline/train6.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/baseline/train6.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/baseline/train7.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/baseline/train7.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/scripts/baseline/train8.sh" beforeDir="false" afterPath="$PROJECT_DIR$/scripts/baseline/train8.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/tools/model.py" beforeDir="false" afterPath="$PROJECT_DIR$/tools/model.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/tools/train_utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/tools/train_utils.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/train.py" beforeDir="false" afterPath="$PROJECT_DIR$/train.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/train_wandb_iter_val.py" beforeDir="false" afterPath="$PROJECT_DIR$/train_wandb_iter_val.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -23,22 +86,91 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/models/baseline_sattn.py">
+        <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_l14.yaml">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="308">
-              <caret line="122" column="65" selection-start-line="122" selection-start-column="65" selection-end-line="122" selection-end-column="65" />
+            <state relative-caret-position="858">
+              <caret line="39" column="45" selection-start-line="39" selection-start-column="9" selection-end-line="39" selection-end-column="45" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/train_wandb_iter_val.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="440">
+              <caret line="36" column="1" selection-start-line="36" selection-start-column="1" selection-end-line="36" selection-end-column="1" />
+              <folding>
+                <element signature="e#0#15#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/train.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="872">
+              <caret line="57" column="60" lean-forward="true" selection-start-line="57" selection-start-column="60" selection-end-line="57" selection-end-column="60" />
+              <folding>
+                <element signature="e#0#15#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/train_wandb_iter_val.py">
+        <entry file="file://$PROJECT_DIR$/models/baseline_sam.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="286">
-              <caret line="52" lean-forward="true" selection-start-line="52" selection-end-line="52" />
+            <state relative-caret-position="232">
+              <caret line="127" column="71" selection-start-line="127" selection-start-column="71" selection-end-line="127" selection-end-column="71" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_caption/rn50.yaml">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="748">
+              <caret line="34" column="12" selection-start-line="34" selection-start-column="12" selection-end-line="34" selection-end-column="12" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/models/baseline_caption.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="50424">
+              <caret line="2292" column="34" selection-start-line="2292" selection-start-column="21" selection-end-line="2292" selection-end-column="34" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/models/bonder/attn.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="5214">
+              <caret line="243" selection-start-line="243" selection-end-line="243" />
               <folding>
-                <element signature="e#0#15#0" expanded="true" />
+                <element signature="e#0#12#0" expanded="true" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/clip/model.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="3168">
+              <caret line="150" selection-start-line="150" selection-end-line="150" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/tools/train_utils.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="1496">
+              <caret line="68" column="44" selection-start-line="68" selection-start-column="5" selection-end-line="68" selection-end-column="44" />
             </state>
           </provider>
         </entry>
@@ -54,36 +186,36 @@
   </component>
   <component name="FindInProjectRecents">
     <findStrings>
-      <find>baseline_cattn_vocabloss_shembed</find>
-      <find>dir</find>
-      <find>replace</find>
-      <find>tqdm</find>
-      <find>parti</find>
-      <find>shots</find>
-      <find>fea_scale</find>
-      <find>freeze</find>
-      <find>img_views</find>
-      <find>optimizer</find>
-      <find>text_templta</find>
-      <find>classnames</find>
-      <find>window_size</find>
-      <find>VIEWS</find>
-      <find>rel_pos_h</find>
-      <find>shembed</find>
-      <find>_tokenizer</find>
-      <find>lpsam</find>
-      <find>depth</find>
-      <find>self.bonder</find>
-      <find>zsinit</find>
-      <find>get_templates</find>
-      <find>self.text_templates</find>
-      <find>self.label</find>
-      <find>max_epoch</find>
-      <find>baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft</find>
-      <find>bonder</find>
-      <find>query</find>
+      <find>read_classnames</find>
+      <find>tokenized_query_category</find>
+      <find>def val</find>
+      <find>CrossAttnBlock_nx_pe</find>
       <find>read_data</find>
-      <find>data_dir</find>
+      <find>baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_nxcattn</find>
+      <find>mlp</find>
+      <find>Mlp</find>
+      <find>caption_only</find>
+      <find>wo_caption</find>
+      <find>depth</find>
+      <find>nx</find>
+      <find>model</find>
+      <find>vocab_head</find>
+      <find>self.tokenizer</find>
+      <find>embed_layer</find>
+      <find>transformer_width</find>
+      <find>bert</find>
+      <find>forward</find>
+      <find>call</find>
+      <find>return_length</find>
+      <find>padding</find>
+      <find>inputs_embeds</find>
+      <find>return_dict</find>
+      <find>read_split</find>
+      <find>dataset_name</find>
+      <find>512</find>
+      <find>baseline_caption_wiseft_multi_stream</find>
+      <find>input_size</find>
+      <find>-100</find>
     </findStrings>
     <dirStrings>
       <dir>F:\桌面文件\Ongoing\prompt tuning\code\Baseline\datasets</dir>
@@ -102,65 +234,65 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/configs/trainers/Baseline_sam/vit_b_batch32.yaml" />
-        <option value="$PROJECT_DIR$/models/baseline_sam.py" />
-        <option value="$PROJECT_DIR$/configs/trainers/lpsam/vit_b16_batch32.yaml" />
-        <option value="$PROJECT_DIR$/train_lpsam_fs.sh" />
-        <option value="$PROJECT_DIR$/models/backbone/sam_image_encoder.py" />
-        <option value="$PROJECT_DIR$/models/backbone/__init__.py" />
-        <option value="$PROJECT_DIR$/models/lpsam.py" />
-        <option value="$PROJECT_DIR$/train.py" />
-        <option value="$PROJECT_DIR$/configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_2xcattn.yaml" />
-        <option value="$PROJECT_DIR$/configs/trainers/Baseline_cattn_embedloss/vit_b16_batch32.yaml" />
-        <option value="$PROJECT_DIR$/models/baseline_cattn_embedloss.py" />
-        <option value="$PROJECT_DIR$/configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_2xcattn_pe.yaml" />
-        <option value="$PROJECT_DIR$/models/baseline_post_decoder.py" />
-        <option value="$PROJECT_DIR$/models/head/cls_heads.py" />
-        <option value="$PROJECT_DIR$/models/baseline_cattn_vl_pd.py" />
-        <option value="$PROJECT_DIR$/configs/trainers/Baseline_cattn_vl_pd/vit_b16_batch32.yaml" />
-        <option value="$PROJECT_DIR$/configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_fixedfirst.yaml" />
-        <option value="$PROJECT_DIR$/processor/__init__.py" />
-        <option value="$PROJECT_DIR$/configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_aug.yaml" />
-        <option value="$PROJECT_DIR$/train_baseline2.sh" />
-        <option value="$PROJECT_DIR$/train_baseline3.sh" />
-        <option value="$PROJECT_DIR$/train_baseline5.sh" />
-        <option value="$PROJECT_DIR$/train_baseline4.sh" />
-        <option value="$PROJECT_DIR$/train_lpclip_fs.sh" />
-        <option value="$PROJECT_DIR$/train_baseline1.sh" />
-        <option value="$PROJECT_DIR$/solver/schedulers.py" />
-        <option value="$PROJECT_DIR$/scripts/baseline/train_baseline1.sh" />
-        <option value="$PROJECT_DIR$/scripts/baseline/train_baseline2.sh" />
-        <option value="$PROJECT_DIR$/scripts/baseline/train_baseline3.sh" />
-        <option value="$PROJECT_DIR$/scripts/baseline/train_baseline4.sh" />
-        <option value="$PROJECT_DIR$/scripts/baseline/train_baseline5.sh" />
-        <option value="$PROJECT_DIR$/train_wandb_copy.py" />
-        <option value="$PROJECT_DIR$/scripts/baseline/train_baseline6.sh" />
-        <option value="$PROJECT_DIR$/scripts/baseline/train_baseline7.sh" />
-        <option value="$PROJECT_DIR$/train_sweep_hyper.py" />
+        <option value="$PROJECT_DIR$/scripts/baseline/train9.sh" />
+        <option value="$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_b16_caption_only.yaml" />
+        <option value="$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_b16_multi_wo_caption.yaml" />
+        <option value="$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_b16_multi_stream_nx.yaml" />
+        <option value="$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_b16_multi_stream_nx_auxi.yaml" />
         <option value="$PROJECT_DIR$/processor/processor.py" />
-        <option value="$PROJECT_DIR$/configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_textaug.yaml" />
-        <option value="$PROJECT_DIR$/train_wandb.py" />
-        <option value="$PROJECT_DIR$/models/baseline_cattn_vocabloss.py" />
-        <option value="$PROJECT_DIR$/train_baseline_fs.sh" />
-        <option value="$PROJECT_DIR$/configs/trainers/Baseline_sattn/vit_b16.yaml" />
-        <option value="$PROJECT_DIR$/models/__init__.py" />
-        <option value="$PROJECT_DIR$/tools/train_utils.py" />
-        <option value="$PROJECT_DIR$/train_wandb_iter_val.py" />
+        <option value="$PROJECT_DIR$/models/head/cls_heads.py" />
+        <option value="$PROJECT_DIR$/configs/trainers/Baseline_caption_bert/vit_b16_bert_base.yaml" />
+        <option value="$PROJECT_DIR$/configs/trainers/Baseline_caption_bert/vit_b16_bert_large.yaml" />
+        <option value="$PROJECT_DIR$/scripts/baseline/train13.sh" />
+        <option value="$PROJECT_DIR$/scripts/baseline/train14.sh" />
+        <option value="$PROJECT_DIR$/configs/trainers/Baseline_caption_t5/vit_b16_t5_base.yaml" />
+        <option value="$PROJECT_DIR$/models/baseline_caption_bert.py" />
+        <option value="$PROJECT_DIR$/datasets/make_dataloader.py" />
+        <option value="$PROJECT_DIR$/configs/datasets/imagenet_wval.yaml" />
+        <option value="$PROJECT_DIR$/scripts/baseline/train_dummy.sh" />
+        <option value="$PROJECT_DIR$/datasets/basic.py" />
+        <option value="$PROJECT_DIR$/datasets/templates/template_mining.py" />
+        <option value="$PROJECT_DIR$/scripts/baseline/train12.sh" />
+        <option value="$PROJECT_DIR$/scripts/baseline/train15.sh" />
+        <option value="$PROJECT_DIR$/scripts/baseline/train11.sh" />
+        <option value="$PROJECT_DIR$/scripts/baseline/train16.sh" />
+        <option value="$PROJECT_DIR$/clip/clip.py" />
+        <option value="$PROJECT_DIR$/configs/trainers/Baseline_caption_t5/vit_l14_t5_base.yaml" />
+        <option value="$PROJECT_DIR$/models/baseline_caption_t5.py" />
+        <option value="$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_l14.yaml" />
+        <option value="$PROJECT_DIR$/scripts/baseline/train1.sh" />
         <option value="$PROJECT_DIR$/scripts/baseline/train2.sh" />
         <option value="$PROJECT_DIR$/scripts/baseline/train3.sh" />
-        <option value="$PROJECT_DIR$/scripts/baseline/train4.sh" />
-        <option value="$PROJECT_DIR$/models/baseline_sattn.py" />
-        <option value="$PROJECT_DIR$/models/bonder/attn.py" />
-        <option value="$PROJECT_DIR$/scripts/baseline/train1.sh" />
+        <option value="$PROJECT_DIR$/datasets/caltech101.py" />
+        <option value="$PROJECT_DIR$/datasets/dtd.py" />
+        <option value="$PROJECT_DIR$/datasets/eurosat.py" />
+        <option value="$PROJECT_DIR$/datasets/fgvc_aircraft.py" />
+        <option value="$PROJECT_DIR$/datasets/food101.py" />
         <option value="$PROJECT_DIR$/datasets/imagenet.py" />
+        <option value="$PROJECT_DIR$/datasets/oxford_flowers.py" />
+        <option value="$PROJECT_DIR$/datasets/oxford_pets.py" />
+        <option value="$PROJECT_DIR$/datasets/stanford_cars.py" />
+        <option value="$PROJECT_DIR$/datasets/sun397.py" />
+        <option value="$PROJECT_DIR$/datasets/ucf101.py" />
+        <option value="$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_l14_wo_caption.yaml" />
+        <option value="$PROJECT_DIR$/scripts/baseline/train4.sh" />
+        <option value="$PROJECT_DIR$/scripts/baseline/train5.sh" />
+        <option value="$PROJECT_DIR$/scripts/baseline/train6.sh" />
+        <option value="$PROJECT_DIR$/models/__init__.py" />
+        <option value="$PROJECT_DIR$/tools/train_utils.py" />
+        <option value="$PROJECT_DIR$/configs/trainers/Baseline_caption/rn50.yaml" />
+        <option value="$PROJECT_DIR$/models/bonder/attn.py" />
+        <option value="$PROJECT_DIR$/models/baseline_caption.py" />
+        <option value="$PROJECT_DIR$/train_wandb_iter_val.py" />
+        <option value="$PROJECT_DIR$/train.py" />
       </list>
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="640" />
-    <option name="y" value="-14" />
-    <option name="width" value="1170" />
-    <option name="height" value="1047" />
+    <option name="x" value="240" />
+    <option name="y" value="130" />
+    <option name="width" value="1440" />
+    <option name="height" value="780" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectView">
@@ -168,6 +300,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
+      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -175,17 +308,34 @@
               <item name="Baseline" type="b2602c69:ProjectViewProjectNode" />
               <item name="Baseline" type="462c0819:PsiDirectoryNode" />
             </path>
+            <path>
+              <item name="Baseline" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Baseline" type="462c0819:PsiDirectoryNode" />
+              <item name="configs" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="Baseline" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Baseline" type="462c0819:PsiDirectoryNode" />
+              <item name="configs" type="462c0819:PsiDirectoryNode" />
+              <item name="trainers" type="462c0819:PsiDirectoryNode" />
+            </path>
+            <path>
+              <item name="Baseline" type="b2602c69:ProjectViewProjectNode" />
+              <item name="Baseline" type="462c0819:PsiDirectoryNode" />
+              <item name="configs" type="462c0819:PsiDirectoryNode" />
+              <item name="trainers" type="462c0819:PsiDirectoryNode" />
+              <item name="Baseline_caption" type="462c0819:PsiDirectoryNode" />
+            </path>
           </expand>
           <select />
         </subPane>
       </pane>
-      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
     <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
     <property name="WebServerToolWindowFactoryState" value="true" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../cross_modal_adaptation" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/../../../PAR竞赛/CAIP2023/code/TransPAR_SaAttGCNTrans_v2_std" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="settings.editor.selected.configurable" value="reference.idesettings.debugger.python" />
@@ -208,8 +358,8 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.train_wandb_iter">
-    <configuration name="baseline_sam" type="PythonConfigurationType" factoryName="Python" temporary="true">
+  <component name="RunManager" selected="Python.train">
+    <configuration name="baseline_caption_bert" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="Baseline" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
@@ -222,7 +372,7 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/models/baseline_sam.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/models/baseline_caption_bert.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -245,7 +395,29 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/debug.py" />
-      <option name="PARAMETERS" value="--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/debug/ --dataset-config-file configs/datasets/imagenet.yaml --config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_textaug.yaml DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.DIST_TRAIN False DATALOADER.TRAIN_X.BATCH_SIZE 32 OPTIM.LR 0.002" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="preprocess_caption" type="PythonConfigurationType" factoryName="Python" temporary="true">
+      <module name="Baseline" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/datasets/extraction" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/datasets/extraction/preprocess_caption.py" />
+      <option name="PARAMETERS" value="--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -259,7 +431,7 @@
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
-        <env name="CUDA_VISIBLE_DEVICES" value="6,PYTHONUNBUFFERED=1" />
+        <env name="CUDA_VISIBLE_DEVICES" value="7,PYTHONUNBUFFERED=1" />
       </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
@@ -268,7 +440,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train.py" />
-      <option name="PARAMETERS" value="--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/debug/ --dataset-config-file configs/datasets/imagenet.yaml --config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_textaug.yaml DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.DIST_TRAIN False DATALOADER.TRAIN_X.BATCH_SIZE 32 OPTIM.LR 0.002" />
+      <option name="PARAMETERS" value="--dataset-config-file /home/tanhao/Baseline/configs/datasets/caltech101.yaml --config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_l14.yaml DATASET.NUM_SHOTS 16" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -276,12 +448,13 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
-    <configuration name="train_wandb" type="PythonConfigurationType" factoryName="Python" temporary="true">
+    <configuration name="train_wandb_iter_val" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="Baseline" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
         <env name="PYTHONUNBUFFERED" value="1" />
+        <env name="CUDA_VISIBLE_DEVICES" value="3,PYTHONUNBUFFERED=1" />
       </envs>
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
@@ -289,30 +462,8 @@
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train_wandb.py" />
-      <option name="PARAMETERS" value="--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/debug/ --dataset-config-file configs/datasets/imagenet.yaml --config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_lscale_iter.yaml DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.DIST_TRAIN False DATALOADER.TRAIN_X.BATCH_SIZE 32 OPTIM.LR 0.002" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
-    <configuration name="train_wandb_iter" type="PythonConfigurationType" factoryName="Python" temporary="true">
-      <module name="Baseline" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="true" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train_wandb_iter.py" />
-      <option name="PARAMETERS" value="--root /mnt/sdb/tanhao/recognition/ --seed 1 --output-dir /mnt/sdc/tanhao/prompt/Baseline_cattn_vocabloss/debug/ --dataset-config-file configs/datasets/imagenet.yaml --config-file configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_lscale_iter_wiseft.yaml DATASET.NUM_SHOTS 16 TRAINER.BASELINE.FUSE cat TRAIN.DIST_TRAIN False DATALOADER.TRAIN_X.BATCH_SIZE 32 OPTIM.LR 0.002" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/train_wandb_iter_val.py" />
+      <option name="PARAMETERS" value="--dataset-config-file /home/tanhao/Baseline/configs/datasets/caltech101.yaml --config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/rn50.yaml DATASET.NUM_SHOTS 16" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -321,19 +472,19 @@
       <method v="2" />
     </configuration>
     <list>
-      <item itemvalue="Python.train" />
+      <item itemvalue="Python.train_wandb_iter_val" />
+      <item itemvalue="Python.preprocess_caption" />
       <item itemvalue="Python.debug" />
-      <item itemvalue="Python.baseline_sam" />
-      <item itemvalue="Python.train_wandb" />
-      <item itemvalue="Python.train_wandb_iter" />
+      <item itemvalue="Python.baseline_caption_bert" />
+      <item itemvalue="Python.train" />
     </list>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.train_wandb_iter" />
-        <item itemvalue="Python.train_wandb" />
         <item itemvalue="Python.train" />
+        <item itemvalue="Python.train_wandb_iter_val" />
+        <item itemvalue="Python.baseline_caption_bert" />
         <item itemvalue="Python.debug" />
-        <item itemvalue="Python.baseline_sam" />
+        <item itemvalue="Python.preprocess_caption" />
       </list>
     </recent_temporary>
   </component>
@@ -384,6 +535,25 @@
       <workItem from="1681141225425" duration="706000" />
       <workItem from="1681177003809" duration="5832000" />
       <workItem from="1684026151099" duration="748000" />
+      <workItem from="1684720310584" duration="16398000" />
+      <workItem from="1684836525594" duration="1551000" />
+      <workItem from="1684894323412" duration="26785000" />
+      <workItem from="1684978750395" duration="12294000" />
+      <workItem from="1685070986657" duration="1114000" />
+      <workItem from="1685120057845" duration="1841000" />
+      <workItem from="1685151759032" duration="7607000" />
+      <workItem from="1685238659541" duration="7015000" />
+      <workItem from="1685289711726" duration="741000" />
+      <workItem from="1685327962262" duration="5626000" />
+      <workItem from="1685414272327" duration="1827000" />
+      <workItem from="1685501746266" duration="5627000" />
+      <workItem from="1685540892265" duration="596000" />
+      <workItem from="1685590147276" duration="9237000" />
+      <workItem from="1685601688241" duration="8862000" />
+      <workItem from="1685671170524" duration="13515000" />
+      <workItem from="1685950455429" duration="5866000" />
+      <workItem from="1686015564079" duration="8002000" />
+      <workItem from="1686105294896" duration="1392000" />
     </task>
     <task id="LOCAL-00001" summary="train with wandb">
       <created>1679455186633</created>
@@ -410,7 +580,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="274474000" />
+    <option name="totallyTimeSpent" value="410975000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -423,14 +593,15 @@
   </component>
   <component name="ToolWindowManager">
     <frame x="-8" y="-8" width="1936" height="1056" extended-state="6" />
+    <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.23773988" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.19083156" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.329718" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.5390456" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.4251627" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.47613883" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.44143167" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" weight="0.329718" />
@@ -438,7 +609,7 @@
       <window_info anchor="bottom" id="Version Control" order="8" />
       <window_info anchor="bottom" id="File Transfer" order="9" weight="0.3470716" />
       <window_info anchor="bottom" id="Database Changes" order="10" />
-      <window_info active="true" anchor="bottom" id="Terminal" order="11" visible="true" weight="0.30585682" />
+      <window_info anchor="bottom" id="Terminal" order="11" weight="0.30585682" />
       <window_info anchor="bottom" id="Event Log" order="12" side_tool="true" />
       <window_info anchor="bottom" id="Python Console" order="13" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -449,28 +620,28 @@
       <window_info anchor="right" id="Database" order="5" />
     </layout>
     <layout-to-restore>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.046375267" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.18656716" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
-      <window_info anchor="bottom" id="Find" order="1" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.51084596" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.4815618" />
+      <window_info anchor="bottom" id="Find" order="1" weight="0.329718" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.36334056" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.44143167" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
-      <window_info anchor="bottom" id="TODO" order="6" />
+      <window_info anchor="bottom" id="TODO" order="6" weight="0.329718" />
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="8" />
-      <window_info anchor="bottom" id="File Transfer" order="9" weight="0.3286334" />
+      <window_info anchor="bottom" id="File Transfer" order="9" visible="true" weight="0.3470716" />
       <window_info anchor="bottom" id="Database Changes" order="10" />
-      <window_info anchor="bottom" id="Terminal" order="11" weight="0.329718" />
+      <window_info anchor="bottom" id="Terminal" order="11" weight="0.30585682" />
       <window_info anchor="bottom" id="Event Log" order="12" side_tool="true" />
       <window_info anchor="bottom" id="Python Console" order="13" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
       <window_info anchor="right" id="Ant Build" order="1" weight="0.25" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="right" id="Remote Host" order="3" />
-      <window_info anchor="right" id="SciView" order="4" />
+      <window_info anchor="right" id="SciView" order="4" weight="0.32995737" />
       <window_info anchor="right" id="Database" order="5" />
     </layout-to-restore>
   </component>
@@ -496,381 +667,442 @@
           <line>121</line>
           <option name="timeStamp" value="16" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/debug.py</url>
+          <line>218</line>
+          <option name="timeStamp" value="18" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/models/baseline_caption_t5.py</url>
+          <line>265</line>
+          <option name="timeStamp" value="19" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/models/baseline_caption.py</url>
+          <line>2151</line>
+          <option name="timeStamp" value="20" />
+        </line-breakpoint>
       </breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
     <SUITE FILE_PATH="coverage/Baseline$train_wandb.coverage" NAME="train_wandb Coverage Results" MODIFIED="1681358671853" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/Baseline$train.coverage" NAME="train Coverage Results" MODIFIED="1681180118869" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/Baseline$train_sweep_hyper.coverage" NAME="train_sweep_hyper Coverage Results" MODIFIED="1679241379518" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Baseline$preprocess_caption.coverage" NAME="preprocess_caption Coverage Results" MODIFIED="1684938464855" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/datasets/extraction" />
     <SUITE FILE_PATH="coverage/Baseline$baseline_cattn_vocabloss.coverage" NAME="baseline_cattn_vocabloss Coverage Results" MODIFIED="1680268700505" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/models" />
+    <SUITE FILE_PATH="coverage/Baseline$baseline_sam.coverage" NAME="baseline_sam Coverage Results" MODIFIED="1680788204450" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/models" />
+    <SUITE FILE_PATH="coverage/Baseline$train_wandb_iter.coverage" NAME="train_wandb_iter Coverage Results" MODIFIED="1681375376539" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Baseline$img_features.coverage" NAME="img_features Coverage Results" MODIFIED="1680693663767" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/datasets/extraction" />
+    <SUITE FILE_PATH="coverage/Baseline$baseline_caption_bert.coverage" NAME="baseline_caption_bert Coverage Results" MODIFIED="1685601511708" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/models" />
+    <SUITE FILE_PATH="coverage/Baseline$train.coverage" NAME="train Coverage Results" MODIFIED="1686056408891" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Baseline$train_sweep_hyper.coverage" NAME="train_sweep_hyper Coverage Results" MODIFIED="1679241379518" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Baseline$debug_bert.coverage" NAME="debug_bert Coverage Results" MODIFIED="1680145975487" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/Baseline$label_embed.coverage" NAME="label_embed Coverage Results" MODIFIED="1679560166595" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/datasets/extraction" />
     <SUITE FILE_PATH="coverage/Baseline$train_utils.coverage" NAME="train_utils Coverage Results" MODIFIED="1680696415592" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tools" />
-    <SUITE FILE_PATH="coverage/Baseline$baseline_sam.coverage" NAME="baseline_sam Coverage Results" MODIFIED="1680788204450" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/models" />
     <SUITE FILE_PATH="coverage/Baseline$baseline.coverage" NAME="baseline Coverage Results" MODIFIED="1679488605712" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/models" />
-    <SUITE FILE_PATH="coverage/Baseline$train_wandb_iter.coverage" NAME="train_wandb_iter Coverage Results" MODIFIED="1681375376539" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/Baseline$img_features.coverage" NAME="img_features Coverage Results" MODIFIED="1680693663767" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/datasets/extraction" />
-    <SUITE FILE_PATH="coverage/Baseline$debug.coverage" NAME="debug Coverage Results" MODIFIED="1681211523833" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Baseline$train_wandb_iter_val.coverage" NAME="train_wandb_iter_val Coverage Results" MODIFIED="1686031235129" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/Baseline$debug.coverage" NAME="debug Coverage Results" MODIFIED="1685120577644" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_cattn_vl_pd/vit_b16_batch32.yaml">
+    <entry file="file://$PROJECT_DIR$/scripts/baseline/train14.sh">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="154">
-          <caret line="7" column="6" lean-forward="true" selection-start-line="7" selection-start-column="6" selection-end-line="7" selection-end-column="6" />
+        <state relative-caret-position="66">
+          <caret line="3" column="6" lean-forward="true" selection-start-line="3" selection-start-column="6" selection-end-line="3" selection-end-column="6" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_fixedfirst.yaml">
+    <entry file="file://$PROJECT_DIR$/datasets/__init__.py">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/configs/datasets/imagenet.yaml">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="198">
-          <caret line="9" column="26" lean-forward="true" selection-start-line="9" selection-start-column="26" selection-end-line="9" selection-end-column="26" />
+        <state relative-caret-position="44">
+          <caret line="2" lean-forward="true" selection-end-line="2" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/models/baseline_cattn_vl_pd.py">
+    <entry file="file://$PROJECT_DIR$/configs/datasets/imagenet_wval.yaml">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="5280">
-          <caret line="240" column="26" lean-forward="true" selection-start-line="240" selection-start-column="26" selection-end-line="240" selection-end-column="26" />
+        <state relative-caret-position="22">
+          <caret line="1" column="23" lean-forward="true" selection-start-line="1" selection-start-column="23" selection-end-line="1" selection-end-column="23" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_aug.yaml">
+    <entry file="file://$PROJECT_DIR$/tools/utils.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="286">
-          <caret line="13" column="2" selection-start-line="13" selection-start-column="2" selection-end-line="13" selection-end-column="114" />
+        <state relative-caret-position="432">
+          <caret line="107" selection-start-line="107" selection-end-line="118" selection-end-column="26" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/train_lpclip_imagenet.sh" />
-    <entry file="file://$PROJECT_DIR$/train_lpclip.sh" />
-    <entry file="file://$PROJECT_DIR$/solver/schedulers.py">
+    <entry file="file://$PROJECT_DIR$/datasets/basic.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1310">
-          <caret line="128" lean-forward="true" selection-start-line="128" selection-end-line="128" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/models/baseline_cattn.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1422">
-          <caret line="207" column="17" lean-forward="true" selection-start-line="207" selection-start-column="17" selection-end-line="207" selection-end-column="17" />
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scripts/baseline/train_baseline1.sh">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="220">
-          <caret line="10" column="4" lean-forward="true" selection-start-line="10" selection-start-column="4" selection-end-line="10" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scripts/baseline/train_baseline2.sh">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="154">
-          <caret line="7" column="85" selection-start-line="7" selection-start-column="85" selection-end-line="7" selection-end-column="85" />
+        <state relative-caret-position="432">
+          <caret line="65" column="16" lean-forward="true" selection-start-line="65" selection-start-column="16" selection-end-line="65" selection-end-column="16" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/datasets/templates/__init__.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="242">
-          <caret line="11" column="43" selection-start-line="11" selection-start-column="31" selection-end-line="11" selection-end-column="43" />
+        <state>
           <folding>
             <element signature="e#0#40#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/train_lpclip_fs.sh">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="506">
-          <caret line="23" lean-forward="true" selection-start-line="23" selection-end-line="23" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/datasets/templates/template_mining.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-528" />
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/datasets/templates/template_pool.py">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/datasets/templates/hand_crafted.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="352">
-          <caret line="28" column="18" lean-forward="true" selection-start-line="28" selection-start-column="18" selection-end-line="28" selection-end-column="18" />
+        <state relative-caret-position="36">
+          <caret line="251" column="31" selection-start-line="251" selection-start-column="31" selection-end-line="251" selection-end-column="31" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_aug.yaml">
+    <entry file="file://$PROJECT_DIR$/scripts/baseline/train13.sh">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="410">
-          <caret line="26" column="16" lean-forward="true" selection-start-line="26" selection-start-column="16" selection-end-line="26" selection-end-column="16" />
+        <state relative-caret-position="198">
+          <caret line="9" column="4" lean-forward="true" selection-start-line="9" selection-start-column="4" selection-end-line="9" selection-end-column="4" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/scripts/baseline/train_baseline5.sh">
+    <entry file="file://$PROJECT_DIR$/scripts/baseline/train11.sh">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="44">
+          <caret line="2" column="16" selection-start-line="2" selection-start-column="16" selection-end-line="2" selection-end-column="16" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scripts/baseline/train15.sh">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="220">
-          <caret line="10" column="4" lean-forward="true" selection-start-line="10" selection-start-column="4" selection-end-line="10" selection-end-column="4" />
+          <caret line="10" column="4" selection-start-line="10" selection-start-column="4" selection-end-line="10" selection-end-column="4" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/scripts/baseline/train_baseline4.sh">
+    <entry file="file://$PROJECT_DIR$/models/baseline_caption_t5.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret column="35" lean-forward="true" selection-start-column="35" selection-end-column="35" />
+        <state relative-caret-position="2134">
+          <caret line="97" column="38" lean-forward="true" selection-start-line="97" selection-start-column="38" selection-end-line="97" selection-end-column="38" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/train_wandb_copy.py" />
-    <entry file="file://$PROJECT_DIR$/scripts/baseline/train_baseline6.sh">
+    <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_caption_t5/vit_l14_t5_base.yaml">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="220">
-          <caret line="10" column="4" lean-forward="true" selection-end-line="10" selection-end-column="4" />
+        <state relative-caret-position="440">
+          <caret line="32" column="11" selection-start-line="32" selection-start-column="11" selection-end-line="32" selection-end-column="20" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/tools/metrics.py">
+    <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_b16_multi_stream.yaml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="286">
+          <caret line="13" column="43" lean-forward="true" selection-end-line="44" selection-end-column="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_caption_t5/vit_b16_t5_base.yaml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="198">
+          <caret line="9" column="26" lean-forward="true" selection-end-line="46" selection-end-column="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scripts/baseline/train16.sh">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="198">
+          <caret line="9" column="4" lean-forward="true" selection-start-line="9" selection-start-column="4" selection-end-line="9" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scripts/baseline/train12.sh">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="198">
+          <caret line="9" column="4" selection-start-line="9" selection-start-column="4" selection-end-line="9" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scripts/baseline/train_dummy.sh">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="398">
+          <caret line="284" selection-start-line="284" selection-end-line="284" selection-end-column="68" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/datasets/dtd.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="308">
-          <caret line="14" selection-start-line="14" selection-end-line="14" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tools/meter.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="132">
-          <caret line="28" selection-start-line="28" selection-end-line="28" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/trainers/cocoop.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1496">
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/trainers/coop.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <folding>
-            <element signature="e#0#21#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit.yaml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="330">
-          <caret line="15" column="6" lean-forward="true" selection-end-line="40" selection-end-column="15" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/train_sweep_hyper.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="793">
-          <caret line="305" column="63" lean-forward="true" selection-start-line="305" selection-start-column="63" selection-end-line="305" selection-end-column="95" />
-          <folding>
-            <element signature="e#0#15#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/train_wandb.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="154">
-          <caret line="16" column="17" selection-start-line="16" selection-start-column="17" selection-end-line="16" selection-end-column="17" />
-          <folding>
-            <element signature="e#0#15#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_textaug.yaml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="396">
-          <caret line="18" column="11" selection-start-line="18" selection-start-column="2" selection-end-line="18" selection-end-column="11" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/train_baseline_fs.sh" />
-    <entry file="file://$PROJECT_DIR$/models/baseline_cattn_vocabloss.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret selection-end-line="59" selection-end-column="16" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32_shembed_zsinit_lscale_iter_wiseft.yaml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="506">
-          <caret line="23" lean-forward="true" selection-end-line="43" selection-end-column="15" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/models/__init__.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="396">
-          <caret line="18" column="42" selection-start-line="18" selection-start-column="42" selection-end-line="18" selection-end-column="42" />
-          <folding>
-            <element signature="e#0#30#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/tools/train_utils.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="308">
-          <caret line="32" column="33" lean-forward="true" selection-start-line="32" selection-start-column="33" selection-end-line="32" selection-end-column="33" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/processor/processor.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="256">
-          <caret line="1229" column="13" lean-forward="true" selection-start-line="1229" selection-start-column="13" selection-end-line="1229" selection-end-column="13" />
-          <folding>
-            <element signature="e#0#12#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scripts/baseline/train2.sh">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="286">
-          <caret line="13" column="34" selection-start-line="13" selection-start-column="34" selection-end-line="13" selection-end-column="34" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scripts/baseline/train3.sh">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="286">
-          <caret line="13" column="34" selection-start-line="13" selection-start-column="34" selection-end-line="13" selection-end-column="34" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.PyCharm2019.1/system/remote_sources/-1943569188/119532354/timm/models/layers/mlp.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="154">
-          <caret line="9" selection-start-line="9" selection-end-line="31" selection-end-column="16" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_sattn/vit_b16.yaml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state>
-          <caret line="9" column="26" lean-forward="true" selection-start-line="9" selection-start-column="26" selection-end-line="9" selection-end-column="26" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scripts/baseline/train_baseline3.sh">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="110">
-          <caret line="5" column="8" lean-forward="true" selection-start-line="5" selection-start-column="8" selection-end-line="7" selection-end-column="142" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scripts/baseline/train5.sh">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="132">
-          <caret line="6" column="18" selection-start-line="6" selection-start-column="15" selection-end-line="6" selection-end-column="18" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scripts/baseline/train_baseline7.sh">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="88">
-          <caret line="4" column="8" selection-start-line="4" selection-start-column="8" selection-end-line="4" selection-end-column="30" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/models/baseline_sam.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="242">
-          <caret line="197" column="53" lean-forward="true" selection-start-line="197" selection-start-column="53" selection-end-line="197" selection-end-column="53" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$USER_HOME$/.PyCharm2019.1/system/remote_sources/-1943569188/119532354/timm/models/layers/drop.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="214">
-          <caret line="135" selection-start-line="135" selection-end-line="153" selection-end-column="28" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/clip/clip.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-330">
-          <folding>
-            <element signature="e#0#14#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/datasets/basic.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="298">
-          <caret line="38" column="4" selection-start-line="38" selection-start-column="4" selection-end-line="38" selection-end-column="4" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/models/bonder/attn.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1100">
-          <caret line="50" lean-forward="true" selection-start-line="50" selection-end-line="50" />
-          <folding>
-            <element signature="e#0#12#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/scripts/baseline/train4.sh">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="286">
-          <caret line="13" column="34" selection-start-line="13" selection-start-column="34" selection-end-line="13" selection-end-column="34" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/datasets/imagenet.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="176">
-          <caret line="8" selection-start-line="8" selection-end-line="8" />
+          <caret line="21" column="8" selection-start-line="21" selection-start-column="8" selection-end-line="21" selection-end-column="8" />
           <folding>
             <element signature="e#0#9#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/scripts/baseline/train1.sh">
+    <entry file="file://$PROJECT_DIR$/datasets/eurosat.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="330">
-          <caret line="15" column="4" selection-start-line="15" selection-start-column="4" selection-end-line="15" selection-end-column="4" />
+        <state relative-caret-position="352">
+          <caret line="34" column="8" selection-start-line="34" selection-start-column="8" selection-end-line="34" selection-end-column="8" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/models/baseline_sattn.py">
+    <entry file="file://$PROJECT_DIR$/datasets/fgvc_aircraft.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="308">
-          <caret line="122" column="65" selection-start-line="122" selection-start-column="65" selection-end-line="122" selection-end-column="65" />
+        <state relative-caret-position="286">
+          <caret line="19" column="8" selection-start-line="19" selection-start-column="8" selection-end-line="19" selection-end-column="8" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/datasets/food101.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="374">
+          <caret line="20" column="8" selection-start-line="20" selection-start-column="8" selection-end-line="20" selection-end-column="8" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/datasets/caltech101.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="235">
+          <caret line="28" column="8" selection-start-line="28" selection-start-column="8" selection-end-line="28" selection-end-column="38" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/datasets/imagenet.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="419">
+          <caret line="146" column="8" selection-start-line="146" selection-start-column="8" selection-end-line="146" selection-end-column="8" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/datasets/oxford_flowers.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="330">
+          <caret line="24" column="83" selection-start-line="24" selection-start-column="83" selection-end-line="24" selection-end-column="83" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/datasets/oxford_pets.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="462">
+          <caret line="21" column="8" selection-start-line="21" selection-start-column="8" selection-end-line="21" selection-end-column="8" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/datasets/sun397.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="374">
+          <caret line="20" column="8" selection-start-line="20" selection-start-column="8" selection-end-line="20" selection-end-column="8" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/datasets/stanford_cars.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="242">
+          <caret line="20" column="38" lean-forward="true" selection-start-line="20" selection-start-column="38" selection-end-line="20" selection-end-column="38" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/datasets/ucf101.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="264">
+          <caret line="16" column="63" lean-forward="true" selection-start-line="16" selection-start-column="63" selection-end-line="16" selection-end-column="63" />
+          <folding>
+            <element signature="e#0#9#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/models/baseline_caption_bert.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="198">
+          <caret line="192" lean-forward="true" selection-start-line="192" selection-end-line="192" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/datasets/make_dataloader.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="59">
+          <caret line="109" selection-start-line="109" selection-end-line="109" />
+          <folding>
+            <element signature="e#0#12#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_b16_multi_wo_caption.yaml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="352">
+          <caret line="16" column="15" lean-forward="true" selection-end-line="44" selection-end-column="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scripts/baseline/train2.sh">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="220">
+          <caret line="10" column="4" lean-forward="true" selection-end-line="10" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scripts/baseline/train3.sh">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="154">
+          <caret line="7" column="67" lean-forward="true" selection-end-line="10" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scripts/baseline/train5.sh">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="220">
+          <caret line="10" column="4" lean-forward="true" selection-start-line="10" selection-start-column="4" selection-end-line="10" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scripts/baseline/train6.sh">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="220">
+          <caret line="10" column="4" lean-forward="true" selection-start-line="10" selection-start-column="4" selection-end-line="10" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scripts/baseline/train4.sh">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="132">
+          <caret line="6" column="4" lean-forward="true" selection-start-line="6" selection-start-column="4" selection-end-line="6" selection-end-column="4" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/clip/clip.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="312">
+          <caret line="30" column="9" selection-start-line="30" selection-start-column="5" selection-end-line="30" selection-end-column="9" />
+          <folding>
+            <element signature="e#0#14#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_b16.yaml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="264">
+          <caret line="12" column="47" selection-end-line="44" selection-end-column="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_l14_wo_caption.yaml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="190">
+          <caret line="19" column="34" lean-forward="true" selection-start-line="19" selection-start-column="34" selection-end-line="19" selection-end-column="34" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/scripts/baseline/train1.sh">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="88">
+          <caret line="4" column="67" selection-start-line="4" selection-start-column="67" selection-end-line="4" selection-end-column="67" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/models/__init__.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="528">
+          <caret line="24" column="43" selection-start-line="24" selection-start-column="43" selection-end-line="24" selection-end-column="43" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_caption/vit_l14.yaml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="858">
+          <caret line="39" column="45" selection-start-line="39" selection-start-column="9" selection-end-line="39" selection-end-column="45" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/train_wandb_iter_val.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="286">
-          <caret line="52" lean-forward="true" selection-start-line="52" selection-end-line="52" />
+        <state relative-caret-position="440">
+          <caret line="36" column="1" selection-start-line="36" selection-start-column="1" selection-end-line="36" selection-end-column="1" />
           <folding>
             <element signature="e#0#15#0" expanded="true" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/configs/trainers/Baseline_caption/rn50.yaml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="748">
+          <caret line="34" column="12" selection-start-line="34" selection-start-column="12" selection-end-line="34" selection-end-column="12" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/models/baseline_caption.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="50424">
+          <caret line="2292" column="34" selection-start-line="2292" selection-start-column="21" selection-end-line="2292" selection-end-column="34" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/models/bonder/attn.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="5214">
+          <caret line="243" selection-start-line="243" selection-end-line="243" />
+          <folding>
+            <element signature="e#0#12#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/clip/model.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="3168">
+          <caret line="150" selection-start-line="150" selection-end-line="150" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/tools/train_utils.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1496">
+          <caret line="68" column="44" selection-start-line="68" selection-start-column="5" selection-end-line="68" selection-end-column="44" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/train.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="872">
+          <caret line="57" column="60" lean-forward="true" selection-start-line="57" selection-start-column="60" selection-end-line="57" selection-end-column="60" />
+          <folding>
+            <element signature="e#0#15#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/models/baseline_sam.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="232">
+          <caret line="127" column="71" selection-start-line="127" selection-start-column="71" selection-end-line="127" selection-end-column="71" />
         </state>
       </provider>
     </entry>

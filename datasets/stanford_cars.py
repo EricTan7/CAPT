@@ -1,8 +1,11 @@
 import os
 import pickle
 from scipy.io import loadmat
-from .basic import Benchmark, read_split, save_split, read_and_split_data, generate_fewshot_dataset, subsample_classes, split_trainval
+from .basic import Benchmark, read_split, save_split, read_and_split_data, \
+    generate_fewshot_dataset, subsample_classes, split_trainval, read_split_caption
 from tools.utils import mkdir_if_missing
+from clip import clip
+from transformers import BertTokenizer, T5Tokenizer
 
 
 class StanfordCars(Benchmark):
@@ -13,11 +16,45 @@ class StanfordCars(Benchmark):
         root = os.path.abspath(os.path.expanduser(cfg.DATASET.ROOT))
         self.dataset_dir = os.path.join(root, self.dataset_dir)
         self.split_path = os.path.join(self.dataset_dir, "split_zhou_StanfordCars.json")
-        self.split_fewshot_dir = os.path.join(self.dataset_dir, "split_fewshot_baseline")
+        if "bert" in cfg.TRAINER.NAME:
+            self.tokenizer = BertTokenizer.from_pretrained(cfg.MODEL.TEXT.ENCODER)  # 'bert-base-uncased'
+        elif "t5" in cfg.TRAINER.NAME:
+            self.tokenizer = T5Tokenizer.from_pretrained(cfg.MODEL.TEXT.ENCODER)
+
+        if cfg.MODEL.CAPTION:
+            if "bert" in cfg.TRAINER.NAME:
+                self.split_fewshot_dir = os.path.join(self.dataset_dir, f"split_fewshot_caption_{cfg.MODEL.TEXT.ENCODER}")
+            elif "t5" in cfg.TRAINER.NAME:
+                self.split_fewshot_dir = os.path.join(self.dataset_dir, f"split_fewshot_caption_{cfg.MODEL.TEXT.ENCODER.split('/')[-1]}")
+            else:
+                self.split_fewshot_dir = os.path.join(self.dataset_dir, "split_fewshot_caption")
+            caption = dict()
+            tokenized_caption = dict()
+            caption_path = os.path.join(self.dataset_dir, "captions_p2_train.txt")
+            with open(caption_path, 'r') as f:
+                for line in f.readlines():
+                    line = line.strip('\n').split('\t')
+                    # cars_train/00467.jpg
+                    cname = os.path.join("cars_train", line[0])
+                    caption[cname] = line[1]
+                    if "bert" in cfg.TRAINER.NAME:
+                        tokenized_caption[cname] = \
+                        self.tokenizer(line[1], padding='max_length', max_length=77, return_tensors='pt')['input_ids'][0]
+                    elif "t5" in cfg.TRAINER.NAME:
+                        tokenized_caption[cname] = \
+                        self.tokenizer(line[1], padding='max_length', max_length=77, return_tensors='pt')['input_ids'][0]
+                    else:
+                        tokenized_caption[cname] = clip.tokenize(line[1])[0]
+        else:
+            self.split_fewshot_dir = os.path.join(self.dataset_dir, "split_fewshot_baseline")
         mkdir_if_missing(self.split_fewshot_dir)
 
         if os.path.exists(self.split_path):
-            train, val, test = read_split(self.split_path, self.dataset_dir)
+            # train, val, test = read_split(self.split_path, self.dataset_dir)
+            if cfg.MODEL.CAPTION:
+                train, val, test = read_split_caption(self.split_path, self.dataset_dir, caption, tokenized_caption)
+            else:
+                train, val, test = read_split(self.split_path, self.dataset_dir)
         else:
             trainval_file = os.path.join(self.dataset_dir, "devkit", "cars_train_annos.mat")
             test_file = os.path.join(self.dataset_dir, "cars_test_annos_withlabels.mat")

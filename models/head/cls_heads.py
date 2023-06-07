@@ -224,6 +224,23 @@ class ClsHead_mul_lscale(nn.Module):
         return x
 
 
+class ClsHead_add_lscale(nn.Module):
+    def __init__(self, classnames, clip_model, logit_scale, bias=False):
+        super().__init__()
+        vis_dim = clip_model.visual.output_dim
+        n_cls = len(classnames)
+
+        self.fc = nn.Linear(vis_dim, n_cls, bias=bias)
+        self.logit_scale = logit_scale
+
+    def forward(self, x):   # [B,1024] [B,1024]
+        x = F.normalize(x, dim=1)
+        x = self.fc(x)
+        x = x * self.logit_scale.exp()
+
+        return x
+
+
 class ClsHead_cat_lscale_lnable(nn.Module):
     def __init__(self, classnames, clip_model, bias=False):
         super().__init__()
@@ -235,6 +252,39 @@ class ClsHead_cat_lscale_lnable(nn.Module):
         # Learnable
         # self.logit_scale = nn.Parameter(torch.ones([]) * np.log(1 / 0.07))  # the same as CLIP
         self.logit_scale = nn.Parameter(torch.tensor(4.60517))
+
+    def forward(self, x):   # [B,1024] [B,1024]
+        x = F.normalize(x, dim=1)
+        x = self.fc(x)
+        x = x * self.logit_scale.exp()
+
+        return x
+
+
+class ClsHead_lscale(nn.Module):
+    def __init__(self, classnames, clip_model, logit_scale, bias=False):
+        super().__init__()
+        vis_dim = clip_model.visual.output_dim
+        n_cls = len(classnames)
+
+        self.fc = nn.Linear(vis_dim, n_cls, bias=bias)
+        self.logit_scale = logit_scale
+
+    def forward(self, x):   # [B,1024] [B,1024]
+        x = F.normalize(x, dim=1)
+        x = self.fc(x)
+        x = x * self.logit_scale.exp()
+
+        return x
+
+
+class ClsHead_cat_lscale_img_text(nn.Module):
+    def __init__(self, classnames, img_dim, text_dim, logit_scale, bias=False):
+        super().__init__()
+        n_cls = len(classnames)
+
+        self.fc = nn.Linear(img_dim+text_dim, n_cls, bias=bias)
+        self.logit_scale = logit_scale
 
     def forward(self, x):   # [B,1024] [B,1024]
         x = F.normalize(x, dim=1)

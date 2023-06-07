@@ -125,80 +125,116 @@
 # os.makedirs(os.path.dirname('./configs/test.txt'))
 
 
-import argparse
+# import argparse
+#
+# from datasets import DataManager
+# from tools.train_utils import *
+#
+#
+# def main(args):
+#     cfg = setup_cfg(args)
+#
+#     # 1.dataset
+#     data = DataManager(cfg)
+#
+#     classnames = data.dataset.classnames
+#     with open(f'{cfg.DATASET.NAME}_classnames.txt', 'a') as f:
+#         for item in classnames:
+#             f.write(str(item) + '\n')
+#
+#
+# if __name__ == "__main__":
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("--root", type=str, default="", help="path to dataset")
+#     parser.add_argument("--output-dir", type=str, default="", help="output directory")
+#     parser.add_argument(
+#         "--resume",
+#         type=str,
+#         default="",
+#         help="checkpoint directory (from which the training resumes)",
+#     )
+#     parser.add_argument("--local_rank", default=0, type=int)
+#     parser.add_argument(
+#         "--dist-train", type=bool, default=False, help="path to config file"
+#     )
+#     parser.add_argument(
+#         "--seed", type=int, default=-1, help="only positive value enables a fixed seed"
+#     )
+#     parser.add_argument(
+#         "--source-domains", type=str, nargs="+", help="source domains for DA/DG"
+#     )
+#     parser.add_argument(
+#         "--target-domains", type=str, nargs="+", help="target domains for DA/DG"
+#     )
+#     parser.add_argument(
+#         "--transforms", type=str, nargs="+", help="data augmentation methods"
+#     )
+#     parser.add_argument(
+#         "--config-file", type=str, default="", help="path to config file"
+#     )
+#     parser.add_argument(
+#         "--dataset-config-file",
+#         type=str,
+#         default="",
+#         help="path to config file for dataset setup",
+#     )
+#     parser.add_argument("--trainer", type=str, default="baseline", help="name of trainer")  # CoOp
+#     parser.add_argument("--backbone", type=str, default="", help="name of CNN backbone")
+#     parser.add_argument("--head", type=str, default="", help="name of head")
+#     parser.add_argument("--eval-only", action="store_true", help="evaluation only")
+#     parser.add_argument(
+#         "--model-dir",
+#         type=str,
+#         default="",
+#         help="load model from this directory for eval-only mode",
+#     )
+#     parser.add_argument(
+#         "--load-epoch", type=int, help="load model weights at this epoch for evaluation"
+#     )
+#     parser.add_argument(
+#         "--no-train", action="store_true", help="do not call trainer.train()"
+#     )
+#     parser.add_argument(
+#         "opts",
+#         default=None,
+#         nargs=argparse.REMAINDER,
+#         help="modify config options using the command-line",
+#     )
+#     args = parser.parse_args()
+#     main(args)
 
-from datasets import DataManager
-from tools.train_utils import *
+
+# import pickle
+# import os
+# preprocessed = "/mnt/sdb/tanhao/recognition/imagenet/split_fewshot_baseline/shot_16-seed_1.pkl"
+#
+# if os.path.exists(preprocessed):
+#     print(f"Loading preprocessed few-shot data from {preprocessed}")
+#     with open(preprocessed, "rb") as file:
+#         data = pickle.load(file)
+#         train = data["train"]
+#
+# b = train[0]['impath'][28:]
+# c = os.path.join("/home/bingxing2/home/scx6150/datasets/recognition/", b)
+# a = 1
+# '/mnt/sdb/tanhao/recognition/imagenet/images/train/n01440764/n01440764_13679.JPEG'
 
 
-def main(args):
-    cfg = setup_cfg(args)
+import os
 
-    # 1.dataset
-    data = DataManager(cfg)
+caption_dic = dict()
+sample = set()
+with open("/mnt/sdb/tanhao/recognition/imagenet/captions_p2.txt", 'r') as f:
+    for line in f.readlines():
+        line = line.strip('\n').split('\t')
+        imname = line[0]
+        caption = line[1]
+        if imname in sample:
+            continue
+        else:
+            sample.add(imname)
+            caption_dic[imname] = caption
 
-    classnames = data.dataset.classnames
-    with open(f'{cfg.DATASET.NAME}_classnames.txt', 'a') as f:
-        for item in classnames:
-            f.write(str(item) + '\n')
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=str, default="", help="path to dataset")
-    parser.add_argument("--output-dir", type=str, default="", help="output directory")
-    parser.add_argument(
-        "--resume",
-        type=str,
-        default="",
-        help="checkpoint directory (from which the training resumes)",
-    )
-    parser.add_argument("--local_rank", default=0, type=int)
-    parser.add_argument(
-        "--dist-train", type=bool, default=False, help="path to config file"
-    )
-    parser.add_argument(
-        "--seed", type=int, default=-1, help="only positive value enables a fixed seed"
-    )
-    parser.add_argument(
-        "--source-domains", type=str, nargs="+", help="source domains for DA/DG"
-    )
-    parser.add_argument(
-        "--target-domains", type=str, nargs="+", help="target domains for DA/DG"
-    )
-    parser.add_argument(
-        "--transforms", type=str, nargs="+", help="data augmentation methods"
-    )
-    parser.add_argument(
-        "--config-file", type=str, default="", help="path to config file"
-    )
-    parser.add_argument(
-        "--dataset-config-file",
-        type=str,
-        default="",
-        help="path to config file for dataset setup",
-    )
-    parser.add_argument("--trainer", type=str, default="baseline", help="name of trainer")  # CoOp
-    parser.add_argument("--backbone", type=str, default="", help="name of CNN backbone")
-    parser.add_argument("--head", type=str, default="", help="name of head")
-    parser.add_argument("--eval-only", action="store_true", help="evaluation only")
-    parser.add_argument(
-        "--model-dir",
-        type=str,
-        default="",
-        help="load model from this directory for eval-only mode",
-    )
-    parser.add_argument(
-        "--load-epoch", type=int, help="load model weights at this epoch for evaluation"
-    )
-    parser.add_argument(
-        "--no-train", action="store_true", help="do not call trainer.train()"
-    )
-    parser.add_argument(
-        "opts",
-        default=None,
-        nargs=argparse.REMAINDER,
-        help="modify config options using the command-line",
-    )
-    args = parser.parse_args()
-    main(args)
+with open("/mnt/sdb/tanhao/recognition/imagenet/captions_p2_new.txt", 'w') as f:
+    for key,item in caption_dic.items():
+        f.write(key+'\t'+item+'\n')
