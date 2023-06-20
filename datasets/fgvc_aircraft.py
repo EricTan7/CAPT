@@ -64,8 +64,7 @@ class FGVCAircraft(Benchmark):
 
         num_shots = cfg.DATASET.NUM_SHOTS
         if num_shots >= 1:
-            # seed = cfg.SEED
-            seed = cfg.DATA_SEED
+            seed = cfg.SEED
             preprocessed = os.path.join(self.split_fewshot_dir, f"shot_{num_shots}-seed_{seed}.pkl")
             
             if os.path.exists(preprocessed):
