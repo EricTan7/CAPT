@@ -40,6 +40,14 @@ class BaseModel(nn.Module):
         name = names[0]
         return self._optims[name].param_groups[0]["lr"]
 
+    def get_specific_lr(self, names=None):
+        if names is None:
+            names = self.get_model_names(names)
+            name = names[0]
+        else:
+            name = names
+        return self._optims[name].param_groups[0]["lr"]
+
     def update_lr(self, names=None):
         names = self.get_model_names(names)
 

@@ -1344,11 +1344,11 @@ def train_wandb_iter_wiseft_val(cfg, model, data, image_loader,
             else:
                 if cfg.TRAIN.DIST_TRAIN and torch.cuda.device_count() > 1:
                     model.module.set_model_mode("test")
-                    results, test_loss = val_wiseft(cfg, model, val_loader)
+                    results, test_loss = val_wiseft_head(cfg, model, val_loader)
                     model.module.set_model_mode("train")
                 else:
                     model.set_model_mode("test")
-                    results, test_loss = val_wiseft(cfg, model, val_loader)
+                    results, test_loss = val_wiseft_head(cfg, model, val_loader)
                     model.set_model_mode("train")
                 if results["accuracy"] > best_val_dict["val_acc"]:
                     best_val_dict["iter"] = iters
@@ -1487,11 +1487,12 @@ def train_caption(cfg, model, data, image_loader, val_loader, test_loader, local
     logger = logging.getLogger(cfg.TRAINER.NAME)
     optimizer = model.optim
     scheduler = model.sched
-    optimizer_fc = None
-    try:
-        optimizer_fc = model.optim_fc
-    except:
-        pass
+    if cfg.OPTIM.LORA_OPTIM:
+        optimizer_lora = model.optim_lora
+        scheduler_lora = model.sched_lora
+    else:
+        optimizer_lora = None
+        scheduler_lora = None
 
     if device:
         model.to(local_rank)
@@ -1522,9 +1523,12 @@ def train_caption(cfg, model, data, image_loader, val_loader, test_loader, local
     }
 
     for iters in range(1, tot_iter+1):
+        model.set_model_mode("train")
         start = time.time()
         # update lr
         scheduler.step()
+        if scheduler_lora is not None:
+            scheduler_lora.step()
         try:
             image, label, caption = parse_batch_caption(next(image_loader_iter))
         except StopIteration:
@@ -1542,9 +1546,9 @@ def train_caption(cfg, model, data, image_loader, val_loader, test_loader, local
         loss.backward()
         optimizer.step()
         optimizer.zero_grad()
-        if optimizer_fc is not None:
-            optimizer_fc.step()
-            optimizer_fc.zero_grad()
+        if optimizer_lora is not None:
+            optimizer_lora.step()
+            optimizer_lora.zero_grad()
 
         if cfg.TRAIN.DIST_TRAIN and torch.cuda.device_count() > 1:
             loss = reduce_value(loss, average=True)
@@ -1565,7 +1569,13 @@ def train_caption(cfg, model, data, image_loader, val_loader, test_loader, local
         batch_time.update(time.time() - start)
 
         # log lr
-        wandb.log({'lr': model.get_current_lr()})
+
+        if optimizer_lora is not None:
+            wandb.log({'lr': model.get_current_lr(),
+                       'lr_lora': model.get_specific_lr('clip_model')
+                       })
+        else:
+            wandb.log({'lr': model.get_current_lr()})
 
         meet_freq = iters % cfg.TRAIN.PRINT_FREQ == 0
         if meet_freq:
@@ -1647,6 +1657,12 @@ def train_caption(cfg, model, data, image_loader, val_loader, test_loader, local
                            'test loss': 0.,
                            'test loss (wiseft_0.5)': 0.,
                            'test loss (wiseft_1.0)': 0.})
+
+                # enabled = set()
+                # for name, param in model.named_parameters():
+                #     if param.requires_grad:
+                #         enabled.add(name)
+                # logger.info(f"Parameters to be updated: {enabled}")
 
     # final: test using the best val model
     model.load_state_dict(best_val_dict["model"])

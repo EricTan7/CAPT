@@ -1,7 +1,15 @@
-for SHOTS in 16 8 4 2 1
+for DATA in fgvc_aircraft
 do
-    CUDA_VISIBLE_DEVICES=4 python train_wandb_iter_val.py \
-    --dataset-config-file /home/tanhao/Baseline/configs/datasets/imagenet_wval.yaml \
-    --config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_l14_wo_caption.yaml \
-    DATASET.NUM_SHOTS ${SHOTS}
+    for alpha in 0.4 0.6 2.
+    do
+        for lr in 5e-5 2e-5 2e-4
+        do
+            CUDA_VISIBLE_DEVICES=2 python train_wandb_iter_val.py \
+            --dataset-config-file /home/tanhao/Baseline/configs/datasets/${DATA}.yaml \
+            --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+            DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA ${alpha} MODEL.LORA.RANK 2 \
+            SEED 1 DATA_SEED 1 \
+            OPTIM.LORA_OPTIM True OPTIM.LR_LORA ${lr}
+        done
+    done
 done

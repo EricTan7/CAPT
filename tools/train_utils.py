@@ -17,7 +17,7 @@ from models import Baseline, lpclip, Baseline_cattn, Baseline_cattn_vocabloss, \
     Baseline_cattn_vocabloss_shembed_zsinit_lscale_wiseft_add, Baseline_caption_wiseft, Baseline_caption_wiseft_multi_stream, \
     Baseline_abla_caption_only, Baseline_abla_multi_wo_caption, Baseline_caption_wiseft_nxcattn, Baseline_caption_wiseft_nxcattn_add, \
     Baseline_caption_wiseft_nxcattn_auxi, Baseline_caption_wiseft_multi_stream_projector, Baseline_caption_wiseft_multi_stream_bert, \
-    Baseline_caption_wiseft_multi_stream_t5, Baseline_caption_wiseft_multi_stream_rn
+    Baseline_caption_wiseft_multi_stream_t5, Baseline_caption_wiseft_multi_stream_rn, Baseline_caption_wiseft_lora
 from configs import get_cfg_default
 import logging
 
@@ -66,7 +66,8 @@ MODELS = {
     'baseline_caption_wiseft_multi_stream_projector': Baseline_caption_wiseft_multi_stream_projector,
     'baseline_caption_wiseft_multi_stream_bert': Baseline_caption_wiseft_multi_stream_bert,
     'baseline_caption_wiseft_multi_stream_t5': Baseline_caption_wiseft_multi_stream_t5,
-    'baseline_caption_wiseft_multi_stream_rn': Baseline_caption_wiseft_multi_stream_rn
+    'baseline_caption_wiseft_multi_stream_rn': Baseline_caption_wiseft_multi_stream_rn,
+    'baseline_caption_wiseft_lora': Baseline_caption_wiseft_lora
 }
 
 
@@ -180,6 +181,15 @@ def extend_cfg(cfg):
 
     cfg.MODEL.TEXT = CN()
     cfg.MODEL.TEXT.ENCODER = 'clip-text'
+
+    cfg.MODEL.LORA = CN()
+    cfg.MODEL.LORA.RANK = 1
+    cfg.MODEL.LORA.ALPHA = 0.
+
+    cfg.DATA_SEED = 1
+
+    cfg.OPTIM.LORA_OPTIM = False    # whether use optim_lora
+    cfg.OPTIM.LR_LORA = 1e-4
 
 
 def setup_cfg(args):

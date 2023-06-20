@@ -5,7 +5,7 @@ import torch.nn as nn
 AVAI_OPTIMS = ["adam", "amsgrad", "sgd", "rmsprop", "radam", "adamw"]
 
 
-def build_optimizer(model, optim_cfg, param_groups=None):
+def build_optimizer(model, optim_cfg, param_groups=None, is_params=False, is_split=False):
     """A function wrapper for building an optimizer.
 
     Args:
@@ -16,7 +16,10 @@ def build_optimizer(model, optim_cfg, param_groups=None):
         param_groups: If provided, directly optimize param_groups and abandon model
     """
     optim = optim_cfg.NAME
-    lr = optim_cfg.LR
+    if is_split:
+        lr = optim_cfg.LR_LORA
+    else:
+        lr = optim_cfg.LR
     weight_decay = optim_cfg.WEIGHT_DECAY
     momentum = optim_cfg.MOMENTUM
     sgd_dampening = optim_cfg.SGD_DAMPNING
@@ -33,7 +36,9 @@ def build_optimizer(model, optim_cfg, param_groups=None):
 
     params = []
 
-    if isinstance(model, list):
+    if is_params:
+        param_groups = model
+    elif isinstance(model, list):
         # for sub_model in model:
         #     for name, module in sub_model.named_children():
         #         params += [p for p in module.parameters()]
@@ -42,6 +47,9 @@ def build_optimizer(model, optim_cfg, param_groups=None):
         else:
             param_groups = []
             for sub in model:
+                # for p in sub.parameters():
+                #     if p.requires_grad:
+                #         param_groups += p
                 param_groups += sub.parameters()
     else:
         # for name, module in model.named_children():

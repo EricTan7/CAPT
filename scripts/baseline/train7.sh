@@ -1,7 +1,15 @@
-for SHOTS in 16 8 4 2 1
+for DATA in stanford_cars
 do
-    CUDA_VISIBLE_DEVICES=1 python train_wandb_iter_val.py \
-    --dataset-config-file /home/tanhao/Baseline/configs/datasets/imagenet.yaml \
-    --config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_b16_multi_stream_add.yaml \
-    DATASET.NUM_SHOTS ${SHOTS} TRAIN.TEST_FREQ 200 MODEL.BONDER.DEPTH 2
+    for lr in 7e-5 2e-5
+    do
+        for iter in 25600 19200 12800
+        do
+            CUDA_VISIBLE_DEVICES=0 python train_wandb_iter_val.py \
+            --dataset-config-file /home/tanhao/Baseline/configs/datasets/${DATA}.yaml \
+            --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+            DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 0.4 MODEL.LORA.RANK 2 \
+            SEED 1 DATA_SEED 1 \
+            OPTIM.LR ${lr} OPTIM.MAX_ITER ${iter}
+        done
+    done
 done

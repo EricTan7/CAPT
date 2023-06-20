@@ -326,3 +326,204 @@ DATASET.NUM_SHOTS 16
 
 # debug param
 --dataset-config-file /home/tanhao/Baseline/configs/datasets/caltech101.yaml --config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption_t5/vit_b16_t5_base.yaml DATASET.NUM_SHOTS 16
+
+
+
+
+
+
+# ============ debug lora ==========================
+CUDA_VISIBLE_DEVICES=2 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/caltech101.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16
+
+for SHOTS in 16 1
+do
+    CUDA_VISIBLE_DEVICES=2 python train_wandb_iter_val.py \
+    --dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+    --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+    DATASET.NUM_SHOTS 16
+done
+
+for SHOTS in 16 1
+do
+    CUDA_VISIBLE_DEVICES=3 python train_wandb_iter_val.py \
+    --dataset-config-file /home/tanhao/Baseline/configs/datasets/dtd.yaml \
+    --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+    DATASET.NUM_SHOTS 16
+done
+
+# ============= hyper lora ======================
+for SHOTS in 16 1
+do
+    for ALPHA in 0.2 0.4 0.6 0.8
+    do
+        for ITER in 12800 25600 38400
+        do
+            CUDA_VISIBLE_DEVICES=2 python train_wandb_iter_val.py \
+            --dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+            --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+            DATASET.NUM_SHOTS 16 TRAIN.VAL_WISEFT False \
+            OPTIM.MAX_ITER ${ITER} MODEL.LORA.ALPHA ${ALPHA}
+        done
+    done
+done
+
+# =============== seed ======================
+for SHOTS in 16 1
+do
+    for SEED in 2 3 4 5 6 3407
+    do
+        CUDA_VISIBLE_DEVICES=3 python train_wandb_iter_val.py \
+        --dataset-config-file /home/tanhao/Baseline/configs/datasets/dtd.yaml \
+        --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+        DATASET.NUM_SHOTS 16 SEED ${SEED}
+    done
+done
+
+CUDA_VISIBLE_DEVICES=4 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 SEED 1 DATA_SEED 1
+
+CUDA_VISIBLE_DEVICES=3 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 SEED 1 DATA_SEED 1
+
+CUDA_VISIBLE_DEVICES=4 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_b16_multi_stream.yaml \
+DATASET.NUM_SHOTS 16 SEED 1 DATA_SEED 1
+
+CUDA_VISIBLE_DEVICES=2 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 SEED 1 DATA_SEED 1 MODEL.LORA.ALPHA 0.
+
+
+# ================= lora hyper ===========================
+CUDA_VISIBLE_DEVICES=1 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 16. MODEL.LORA.RANK 1 \
+SEED 1 DATA_SEED 1
+
+CUDA_VISIBLE_DEVICES=1 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 0.2 MODEL.LORA.RANK 8 \
+SEED 1 DATA_SEED 1
+
+CUDA_VISIBLE_DEVICES=0 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 0.2 MODEL.LORA.RANK 16 \
+SEED 1 DATA_SEED 1
+
+
+# ================== 涨点配置 ===========================
+CUDA_VISIBLE_DEVICES=0 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 0.2 MODEL.LORA.RANK 16 \
+SEED 1 DATA_SEED 1
+
+# 换回0.1.1
+CUDA_VISIBLE_DEVICES=0 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 1. MODEL.LORA.RANK 1 \
+SEED 1 DATA_SEED 1
+
+# lijun 配置
+CUDA_VISIBLE_DEVICES=0 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 8 MODEL.LORA.RANK 4 \
+SEED 1 DATA_SEED 1
+
+CUDA_VISIBLE_DEVICES=1 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/imagenet_wval.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 8 MODEL.LORA.RANK 4 \
+SEED 1 DATA_SEED 1
+
+CUDA_VISIBLE_DEVICES=2 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/stanford_cars.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 8 MODEL.LORA.RANK 4 \
+SEED 1 DATA_SEED 1
+
+# 继续调0.1.1，确认其他数据集是否涨点
+# fgvc_aircraft oxford_pets stanford_cars dtd eurosat oxford_flowers
+CUDA_VISIBLE_DEVICES=3 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/stanford_cars.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 1. MODEL.LORA.RANK 1 \
+SEED 1 DATA_SEED 1
+
+CUDA_VISIBLE_DEVICES=0 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/oxford_pets.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 1. MODEL.LORA.RANK 1 \
+SEED 1 DATA_SEED 1
+
+CUDA_VISIBLE_DEVICES=1 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/oxford_flowers.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 1. MODEL.LORA.RANK 1 \
+SEED 1 DATA_SEED 1
+
+CUDA_VISIBLE_DEVICES=6 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/eurosat.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 1. MODEL.LORA.RANK 1 \
+SEED 1 DATA_SEED 1
+
+# 确认0.1.1涨点
+# 尝试正常的0.1.0是否涨点
+CUDA_VISIBLE_DEVICES=0 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 1. MODEL.LORA.RANK 1 \
+SEED 1 DATA_SEED 1
+
+CUDA_VISIBLE_DEVICES=1 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/eurosat.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 1. MODEL.LORA.RANK 1 \
+SEED 1 DATA_SEED 1
+
+CUDA_VISIBLE_DEVICES=1 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/oxford_pets.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 1. MODEL.LORA.RANK 1 \
+SEED 1 DATA_SEED 1
+
+CUDA_VISIBLE_DEVICES=1 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/stanford_cars.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 1. MODEL.LORA.RANK 1 \
+SEED 1 DATA_SEED 1
+
+# 0.1.0也有涨点
+# 尝试0.1.1 + lijun重写类
+CUDA_VISIBLE_DEVICES=1 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/stanford_cars.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 1. MODEL.LORA.RANK 1 \
+SEED 1 DATA_SEED 1
+
+# =============== 调超参 ============================
+for r in xxx
+do
+    for alpha in xxx
+    do
+        CUDA_VISIBLE_DEVICES=1 python train_wandb_iter_val.py \
+        --dataset-config-file /home/tanhao/Baseline/configs/datasets/stanford_cars.yaml \
+        --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+        DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA ${alpha} MODEL.LORA.RANK ${r} \
+    done
+done

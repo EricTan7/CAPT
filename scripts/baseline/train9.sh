@@ -1,15 +1,14 @@
-CUDA_VISIBLE_DEVICES=4 python train_wandb_iter_val.py \
---dataset-config-file /home/tanhao/Baseline/configs/datasets/imagenet.yaml \
---config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_b16_multi_stream_projector.yaml \
-DATASET.NUM_SHOTS 16 TRAIN.TEST_FREQ 200
-
-for DATASET in stanford_cars oxford_pets ucf101
+for ALPHA in 0.8 1. 2.
 do
-    for SHOTS in 16 8 4 2 1
+    for RANK in 16
     do
-        CUDA_VISIBLE_DEVICES=4 python train_wandb_iter_val.py \
-        --dataset-config-file /home/tanhao/Baseline/configs/datasets/${DATASET}.yaml \
-        --config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_b16_multi_stream_projector.yaml \
-        DATASET.NUM_SHOTS ${SHOTS} TRAIN.TEST_FREQ 100
+        for ITER in 19200 25600 76800
+        do
+            CUDA_VISIBLE_DEVICES=7 python train_wandb_iter_val.py \
+            --dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+            --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+            DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA ${ALPHA} MODEL.LORA.RANK ${RANK} \
+            SEED 1 DATA_SEED 1 OPTIM.MAX_ITER ${ITER}
+        done
     done
 done

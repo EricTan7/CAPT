@@ -101,23 +101,23 @@ def main(args):
     # 2.model ( +optim +sche)
     model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
 
-    getModelSize(model)
+    # getModelSize(model)
 
-    # image_loader = data.train_loader
-    # val_loader = data.val_loader
-    # test_loader = data.test_loader
-    #
-    # # 3.train
-    # if cfg.TRAINER.NAME in ["lpclip", "lpsam"]:
-    #     train_lpclip(cfg, model, data, args.local_rank)
-    # elif cfg.TRAINER.NAME in ["baseline_cattn_vocabloss_shembed_zsinit_fixedfirst"]:
-    #     train_wandb_two_stage(cfg, model, data, args.local_rank)
-    # elif "caption" in cfg.TRAINER.NAME:
-    #     train_caption(cfg, model, data, image_loader, val_loader, test_loader, args.local_rank)
-    # elif ("wiseft" in cfg.TRAINER.NAME) or ("sattn" in cfg.TRAINER.NAME):
-    #     train_wandb_iter_wiseft_val(cfg, model, data, image_loader, val_loader, test_loader, args.local_rank)
-    # else:
-    #     train_wandb_iter(cfg, model, data, args.local_rank)
+    image_loader = data.train_loader
+    val_loader = data.val_loader
+    test_loader = data.test_loader
+
+    # 3.train
+    if cfg.TRAINER.NAME in ["lpclip", "lpsam"]:
+        train_lpclip(cfg, model, data, args.local_rank)
+    elif cfg.TRAINER.NAME in ["baseline_cattn_vocabloss_shembed_zsinit_fixedfirst"]:
+        train_wandb_two_stage(cfg, model, data, args.local_rank)
+    elif "caption" in cfg.TRAINER.NAME:
+        train_caption(cfg, model, data, image_loader, val_loader, test_loader, args.local_rank)
+    elif ("wiseft" in cfg.TRAINER.NAME) or ("sattn" in cfg.TRAINER.NAME):
+        train_wandb_iter_wiseft_val(cfg, model, data, image_loader, val_loader, test_loader, args.local_rank)
+    else:
+        train_wandb_iter(cfg, model, data, args.local_rank)
 
 
 if __name__ == "__main__":

@@ -8,6 +8,73 @@ import torch.nn.functional as F
 from torch import nn
 import loralib as lora
 import math
+from .model import Transformer, VisionTransformer, ModifiedResNet
+
+
+class Lora_Linear(lora.Linear):
+    def __init__(self, in_features: int, out_features: int, r: int = 0, lora_alpha: int = 1, lora_dropout: float = 0,
+                 fan_in_fan_out: bool = False, merge_weights: bool = True, **kwargs):
+        super().__init__(in_features, out_features, r, lora_alpha, lora_dropout, fan_in_fan_out, merge_weights,
+                         **kwargs)
+
+    def train(self, mode: bool = True):
+        def T(w):
+            return w.T if self.fan_in_fan_out else w
+
+        nn.Linear.train(self, mode)
+        if mode == True:
+            if self.merge_weights and self.merged:
+                # Make sure that the weights are not merged
+                if self.r > 0:
+                    self.weight.data -= T(self.lora_B @ self.lora_A) * self.scaling
+                self.merged = False
+        else:
+            if self.merge_weights and not self.merged:
+                # Merge the weights and mark it
+                if self.r > 0:
+                    self.weight.data += T(self.lora_B @ self.lora_A) * self.scaling
+                self.merged = True
+
+
+class Lora_embeding(lora.Embedding):
+    def __init__(self, num_embeddings: int, embedding_dim: int, r: int = 0, lora_alpha: int = 1,
+                 merge_weights: bool = True, **kwargs):
+        super().__init__(num_embeddings, embedding_dim, r, lora_alpha, merge_weights, **kwargs)
+
+    def train(self, mode: bool = True):
+        nn.Embedding.train(self, mode)
+        if mode == True:
+            if self.merge_weights and self.merged:
+                # Make sure that the weights are not merged
+                if self.r > 0:
+                    self.weight.data -= (self.lora_B @ self.lora_A).T * self.scaling
+                self.merged = False
+        else:
+            if self.merge_weights and not self.merged:
+                # Merge the weights and mark it
+                if self.r > 0:
+                    self.weight.data += (self.lora_B @ self.lora_A).T * self.scaling
+                self.merged = True
+
+
+class Lora_conv2d(lora.Conv2d):
+    def __init__(self, in_channels: int, out_channels: int, kernel_size: int, r: int = 0, lora_alpha: int = 1,
+                 lora_dropout: float = 0, merge_weights: bool = True, **kwargs):
+        super().__init__(in_channels, out_channels, kernel_size, r, lora_alpha, lora_dropout, merge_weights, **kwargs)
+
+    def train(self, mode: bool = True):
+        nn.Conv2d.train(self, mode)
+        if mode == True:
+            if self.merge_weights and self.merged:
+                # Make sure that the weights are not merged
+                self.weight.data -= (self.lora_B @ self.lora_A).view(self.weight.shape) * self.scaling
+                self.merged = False
+        else:
+            if self.merge_weights and not self.merged:
+                # Merge the weights and mark it
+                self.weight.data += (self.lora_B @ self.lora_A).view(self.weight.shape) * self.scaling
+                self.merged = True
+
 
 class Bottleneck(nn.Module):
     expansion = 4
@@ -92,68 +159,6 @@ class AttentionPool2d(nn.Module):
         return x[0]
 
 
-class ModifiedResNet(nn.Module):
-    """
-    A ResNet class that is similar to torchvision's but contains the following changes:
-    - There are now 3 "stem" convolutions as opposed to 1, with an average pool instead of a max pool.
-    - Performs anti-aliasing strided convolutions, where an avgpool is prepended to convolutions with stride > 1
-    - The final pooling layer is a QKV attention instead of an average pool
-    """
-
-    def __init__(self, layers, output_dim, heads, input_resolution=224, width=64):
-        # rn50: width:64,   output_dim:1024
-        super().__init__()
-        self.output_dim = output_dim
-        self.input_resolution = input_resolution
-        self.width = width
-
-        # the 3-layer stem
-        self.conv1 = nn.Conv2d(3, width // 2, kernel_size=3, stride=2, padding=1, bias=False)
-        self.bn1 = nn.BatchNorm2d(width // 2)
-        self.conv2 = nn.Conv2d(width // 2, width // 2, kernel_size=3, padding=1, bias=False)
-        self.bn2 = nn.BatchNorm2d(width // 2)
-        self.conv3 = nn.Conv2d(width // 2, width, kernel_size=3, padding=1, bias=False)
-        self.bn3 = nn.BatchNorm2d(width)
-        self.avgpool = nn.AvgPool2d(2)
-        self.relu = nn.ReLU(inplace=True)
-
-        # residual layers
-        self._inplanes = width  # this is a *mutable* variable used during construction
-        self.layer1 = self._make_layer(width, layers[0])
-        self.layer2 = self._make_layer(width * 2, layers[1], stride=2)
-        self.layer3 = self._make_layer(width * 4, layers[2], stride=2)
-        self.layer4 = self._make_layer(width * 8, layers[3], stride=2)
-
-        embed_dim = width * 32  # the ResNet feature dimension
-        self.attnpool = AttentionPool2d(input_resolution // 32, embed_dim, heads, output_dim)
-
-    def _make_layer(self, planes, blocks, stride=1):
-        layers = [Bottleneck(self._inplanes, planes, stride)]
-
-        self._inplanes = planes * Bottleneck.expansion
-        for _ in range(1, blocks):
-            layers.append(Bottleneck(self._inplanes, planes))
-
-        return nn.Sequential(*layers)
-
-    def forward(self, x):
-        def stem(x):
-            for conv, bn in [(self.conv1, self.bn1), (self.conv2, self.bn2), (self.conv3, self.bn3)]:
-                x = self.relu(bn(conv(x)))
-            x = self.avgpool(x)
-            return x
-
-        x = x.type(self.conv1.weight.dtype)
-        x = stem(x)
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)  # [B,2048,7,7]
-        cls = self.attnpool(x)    # [B,1024]
-
-        return x, cls
-
-
 class LayerNorm(nn.LayerNorm):
     """Subclass torch's LayerNorm to handle fp16."""
 
@@ -168,12 +173,13 @@ class QuickGELU(nn.Module):
         return x * torch.sigmoid(1.702 * x)
 
 class MultiheadAttention_Lora(nn.MultiheadAttention):
-    def __init__(self, embed_dim, num_heads, dropout=0, bias=True, add_bias_kv=False, add_zero_attn=False, kdim=None, vdim=None, r=1):
+    def __init__(self, embed_dim, num_heads, dropout=0, bias=True, add_bias_kv=False, add_zero_attn=False, kdim=None, vdim=None, r=1, a=0.):
+    # def __init__(self, embed_dim, num_heads, dropout=0, bias=True, add_bias_kv=False, add_zero_attn=False, kdim=None, vdim=None, r=1, a=1):
         super().__init__(embed_dim, num_heads, dropout, bias, add_bias_kv, add_zero_attn, kdim, vdim)
         self.r = r
         self.merged = False
         self.merge_weights = True
-        self.lora_alpha = 1
+        self.lora_alpha = a
 
         self.lora_Q_A = nn.Parameter(self.in_proj_weight.new_zeros(r, embed_dim))
         self.lora_Q_B = nn.Parameter(self.in_proj_weight.new_zeros(embed_dim, r))
@@ -182,6 +188,7 @@ class MultiheadAttention_Lora(nn.MultiheadAttention):
         self.lora_out_proj_A = nn.Parameter(self.out_proj.weight.new_zeros(r, embed_dim))
         self.lora_out_proj_B = nn.Parameter(self.out_proj.weight.new_zeros(embed_dim, r))
         self.scaling = self.lora_alpha / self.r
+        self.reset_parameters()
     
     def reset_parameters(self):
         # initialize A the same way as the default for nn.Linear and B to zero
@@ -194,37 +201,51 @@ class MultiheadAttention_Lora(nn.MultiheadAttention):
     
     def train(self, mode: bool = True):
         nn.MultiheadAttention.train(self, mode)
-        if self.merge_weights and self.merged:
-            # Make sure that the weights are not merged
-            if self.r > 0:
-                deltQ = self.lora_Q_B @ self.lora_Q_A
-                deltK = torch.zeros_like(deltQ)
-                deltV = self.lora_V_B @ self.lora_V_A
-                self.in_proj_weight.data -= torch.cat((deltQ, deltK, deltV), dim=0) * self.scaling
-                self.out_proj.weight -= (self.lora_out_proj_B @ self.lora_out_proj_A) * self.scaling
-                del deltQ
-                del deltK
-                del deltV
-            self.merged = False
+        if mode:
+            if self.merge_weights and self.merged:
+                # Make sure that the weights are not merged
+                if self.r > 0:
+                    deltQ = self.lora_Q_B @ self.lora_Q_A
+                    deltK = torch.zeros_like(deltQ)
+                    deltV = self.lora_V_B @ self.lora_V_A
+                    self.in_proj_weight.data -= torch.cat((deltQ, deltK, deltV), dim=0) * self.scaling
+                    self.out_proj.weight.data -= (self.lora_out_proj_B @ self.lora_out_proj_A) * self.scaling
+                    del deltQ
+                    del deltK
+                    del deltV
+                self.merged = False
+        else:
+            if self.merge_weights and not self.merged:
+                # Merge the weights and mark it
+                if self.r > 0:
+                    deltQ = self.lora_Q_B @ self.lora_Q_A
+                    deltK = torch.zeros_like(deltQ)
+                    deltV = self.lora_V_B @ self.lora_V_A
+                    self.in_proj_weight.data += torch.cat((deltQ, deltK, deltV), dim=0) * self.scaling
+                    self.out_proj.weight.data += (self.lora_out_proj_B @ self.lora_out_proj_A) * self.scaling
+                    del deltQ
+                    del deltK
+                    del deltV
+                self.merged = True
 
-    def eval(self):
-        nn.MultiheadAttention.eval(self)
-        if self.merge_weights and not self.merged:
-            # Merge the weights and mark it
-            if self.r > 0:
-                deltQ = self.lora_Q_B @ self.lora_Q_A
-                deltK = torch.zeros_like(deltQ)
-                deltV = self.lora_V_B @ self.lora_V_A
-                self.in_proj_weight.data += torch.cat((deltQ, deltK, deltV), dim=0) * self.scaling
-                self.out_proj.weight += (self.lora_out_proj_B @ self.lora_out_proj_A) * self.scaling
-                del deltQ
-                del deltK
-                del deltV
-            self.merged = True
+    # def eval(self):
+    #     nn.MultiheadAttention.eval(self)
+    #     if self.merge_weights and not self.merged:
+    #         # Merge the weights and mark it
+    #         if self.r > 0:
+    #             deltQ = self.lora_Q_B @ self.lora_Q_A
+    #             deltK = torch.zeros_like(deltQ)
+    #             deltV = self.lora_V_B @ self.lora_V_A
+    #             self.in_proj_weight.data += torch.cat((deltQ, deltK, deltV), dim=0) * self.scaling
+    #             self.out_proj.weight += (self.lora_out_proj_B @ self.lora_out_proj_A) * self.scaling
+    #             del deltQ
+    #             del deltK
+    #             del deltV
+    #         self.merged = True
     
     def forward(self, query: Tensor, key: Tensor, value: Tensor, key_padding_mask: Optional[Tensor] = None,
                 need_weights: bool = True, attn_mask: Optional[Tensor] = None):
-            #Merge = False
+        # Merge = False
         if self.r > 0 and not self.merged:
             result = nn.MultiheadAttention.forward(self, query, key, value, key_padding_mask=key_padding_mask, need_weights=need_weights, attn_mask=attn_mask)
             if self.r > 0:
@@ -243,20 +264,25 @@ class MultiheadAttention_Lora(nn.MultiheadAttention):
                 key_padding_mask=key_padding_mask, need_weights=need_weights,
                 attn_mask=attn_mask)[0] * self.scaling, result[1]
             return result
-        #Merge =True
+        # Merge =True
         else:
             return nn.MultiheadAttention.forward(self, query, key, value, key_padding_mask=key_padding_mask, need_weights=need_weights, attn_mask=attn_mask)
 
 class ResidualAttentionBlock_Lora(nn.Module):
-    def __init__(self, d_model: int, n_head: int, attn_mask: torch.Tensor = None, r=1):
+    def __init__(self, d_model: int, n_head: int, attn_mask: torch.Tensor = None, r=1, a=0.):
+    # def __init__(self, d_model: int, n_head: int, attn_mask: torch.Tensor = None, r=1, a=1):
         super().__init__()
 
-        self.attn = MultiheadAttention_Lora(d_model, n_head, r=r)
+        self.attn = MultiheadAttention_Lora(d_model, n_head, r=r, a=a)
         self.ln_1 = LayerNorm(d_model)
         self.mlp = nn.Sequential(OrderedDict([
-            ("c_fc", lora.Linear(d_model, d_model * 4, r=r)),
+            # ("c_fc", lora.Linear(d_model, d_model * 4, r=r, lora_alpha=a)),
+            # ("c_fc", nn.Linear(d_model, d_model * 4)),
+            ("c_fc", Lora_Linear(d_model, d_model * 4, r=r, lora_alpha=a)),
             ("gelu", QuickGELU()),
-            ("c_proj", lora.Linear(d_model * 4, d_model, r=r))
+            # ("c_proj", lora.Linear(d_model * 4, d_model, r=r, lora_alpha=a))
+            # ("c_proj", nn.Linear(d_model * 4, d_model)),
+            ("c_proj", Lora_Linear(d_model * 4, d_model, r=r, lora_alpha=a))
         ]))
         self.ln_2 = LayerNorm(d_model)
         self.attn_mask = attn_mask
@@ -272,29 +298,34 @@ class ResidualAttentionBlock_Lora(nn.Module):
 
 
 class Transformer_Lora(nn.Module):
-    def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None, r: int = 1):
+    def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None, r: int = 1, a: float = 0.):
+    # def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None, r: int = 1, a=1):
         super().__init__()
         self.width = width
         self.layers = layers
-        self.resblocks = nn.Sequential(*[ResidualAttentionBlock_Lora(width, heads, attn_mask, r=r) for _ in range(layers)])
+        self.resblocks = nn.Sequential(*[ResidualAttentionBlock_Lora(width, heads, attn_mask, r=r, a=a) for _ in range(layers)])
 
     def forward(self, x: torch.Tensor):
         return self.resblocks(x)
 
 
 class VisionTransformer_Lora(nn.Module):
-    def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int, r: int = 1):
+    def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int, r: int = 1, a: float = 0.):
+    # def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int, r: int = 1, a=1):
         super().__init__()
         self.input_resolution = input_resolution
         self.output_dim = output_dim
-        self.conv1 = lora.Conv2d(in_channels=3, out_channels=width, kernel_size=patch_size, stride=patch_size, bias=False, r=r)
+        # self.conv1 = lora.Conv2d(in_channels=3, out_channels=width, kernel_size=patch_size, stride=patch_size, bias=False, r=r, lora_alpha=a)
+        # self.conv1 = nn.Conv2d(in_channels=3, out_channels=width, kernel_size=patch_size, stride=patch_size, bias=False)
+        self.conv1 = Lora_conv2d(in_channels=3, out_channels=width, kernel_size=patch_size, stride=patch_size, bias=False, r=r, lora_alpha=a)
 
         scale = width ** -0.5
         self.class_embedding = nn.Parameter(scale * torch.randn(width))
         self.positional_embedding = nn.Parameter(scale * torch.randn((input_resolution // patch_size) ** 2 + 1, width))
         self.ln_pre = LayerNorm(width)
 
-        self.transformer = Transformer_Lora(width, layers, heads, r=r)
+        # self.transformer = Transformer_Lora(width, layers, heads, r=r, a=a)
+        self.transformer = Transformer(width, layers, heads)
 
         self.ln_post = LayerNorm(width)
         self.proj = nn.Parameter(scale * torch.randn(width, output_dim))
@@ -311,12 +342,14 @@ class VisionTransformer_Lora(nn.Module):
         x = self.transformer(x)
         x = x.permute(1, 0, 2)  # LND -> NLD
 
-        x = self.ln_post(x[:, 0, :])
+        # x = self.ln_post(x[:, 0, :])
+        cls = self.ln_post(x[:, 0, :])
 
         if self.proj is not None:
             x = x @ self.proj
+            cls = cls @ self.proj
 
-        return x
+        return x, cls
 
 
 class CLIP_Lora(nn.Module):
@@ -333,7 +366,9 @@ class CLIP_Lora(nn.Module):
                  transformer_width: int,
                  transformer_heads: int,
                  transformer_layers: int,
-                 r: int = 1
+                 r: int = 1,
+                 # a: float = 0.
+                 a=1
                  ):
         super().__init__()
 
@@ -356,10 +391,20 @@ class CLIP_Lora(nn.Module):
                 width=vision_width,
                 layers=vision_layers,
                 heads=vision_heads,
-                output_dim=embed_dim
+                output_dim=embed_dim,
+                r=r,
+                a=a,
             )
 
-        self.transformer = Transformer_Lora(
+        # self.transformer = Transformer_Lora(
+        #     width=transformer_width,
+        #     layers=transformer_layers,
+        #     heads=transformer_heads,
+        #     attn_mask=self.build_attention_mask(),
+        #     r=r,
+        #     a=a
+        # )
+        self.transformer = Transformer(
             width=transformer_width,
             layers=transformer_layers,
             heads=transformer_heads,
@@ -369,7 +414,9 @@ class CLIP_Lora(nn.Module):
         self.embed_dim = embed_dim
         self.vocab_size = vocab_size
         self.transformer_width = transformer_width
-        self.token_embedding = lora.Embedding(vocab_size, transformer_width, r=r)
+        # self.token_embedding = lora.Embedding(vocab_size, transformer_width, r=r, lora_alpha=a)
+        # self.token_embedding = nn.Embedding(vocab_size, transformer_width)
+        self.token_embedding = Lora_embeding(vocab_size, transformer_width, r=r, lora_alpha=a)
         self.positional_embedding = nn.Parameter(torch.empty(self.context_length, transformer_width))
         self.ln_final = LayerNorm(transformer_width)
 
@@ -417,7 +464,8 @@ class CLIP_Lora(nn.Module):
 
     @property
     def dtype(self):
-        return self.visual.conv1.weight.dtype
+        # return self.visual.conv1.weight.dtype
+        return self.visual.proj.dtype
 
     def encode_image(self, image):
         return self.visual(image.type(self.dtype))
@@ -479,7 +527,7 @@ def convert_weights(model: nn.Module):
     model.apply(_convert_weights_to_fp16)
 
 
-def build_model(state_dict: dict, r=1):
+def build_model(state_dict: dict, r=1, a=0):
     vit = "visual.proj" in state_dict
 
     if vit:
@@ -507,7 +555,7 @@ def build_model(state_dict: dict, r=1):
     model = CLIP_Lora(
         embed_dim,
         image_resolution, vision_layers, vision_width, vision_patch_size,
-        context_length, vocab_size, transformer_width, transformer_heads, transformer_layers, r=r
+        context_length, vocab_size, transformer_width, transformer_heads, transformer_layers, r=r, a=a
     )
 
     for key in ["input_resolution", "context_length", "vocab_size"]:
@@ -518,4 +566,5 @@ def build_model(state_dict: dict, r=1):
     msg = model.load_state_dict(state_dict, strict=False)
     print(msg)
     lora.mark_only_lora_as_trainable(model)
-    return model.eval()
+    # return model.eval()
+    return model
