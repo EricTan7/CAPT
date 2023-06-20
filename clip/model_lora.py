@@ -172,9 +172,11 @@ class QuickGELU(nn.Module):
     def forward(self, x: torch.Tensor):
         return x * torch.sigmoid(1.702 * x)
 
+
 class MultiheadAttention_Lora(nn.MultiheadAttention):
-    def __init__(self, embed_dim, num_heads, dropout=0, bias=True, add_bias_kv=False, add_zero_attn=False, kdim=None, vdim=None, r=1, a=0.):
-    # def __init__(self, embed_dim, num_heads, dropout=0, bias=True, add_bias_kv=False, add_zero_attn=False, kdim=None, vdim=None, r=1, a=1):
+    def __init__(self, embed_dim, num_heads, dropout=0, bias=True, add_bias_kv=False, add_zero_attn=False, kdim=None,
+                 vdim=None, r=1, a=0.):
+        # def __init__(self, embed_dim, num_heads, dropout=0, bias=True, add_bias_kv=False, add_zero_attn=False, kdim=None, vdim=None, r=1, a=1):
         super().__init__(embed_dim, num_heads, dropout, bias, add_bias_kv, add_zero_attn, kdim, vdim)
         self.r = r
         self.merged = False
@@ -189,7 +191,7 @@ class MultiheadAttention_Lora(nn.MultiheadAttention):
         self.lora_out_proj_B = nn.Parameter(self.out_proj.weight.new_zeros(embed_dim, r))
         self.scaling = self.lora_alpha / self.r
         self.reset_parameters()
-    
+
     def reset_parameters(self):
         # initialize A the same way as the default for nn.Linear and B to zero
         nn.init.kaiming_uniform_(self.lora_Q_A, a=math.sqrt(5))
@@ -198,7 +200,7 @@ class MultiheadAttention_Lora(nn.MultiheadAttention):
         nn.init.zeros_(self.lora_V_B)
         nn.init.kaiming_uniform_(self.lora_out_proj_A, a=math.sqrt(5))
         nn.init.zeros_(self.lora_out_proj_B)
-    
+
     def train(self, mode: bool = True):
         nn.MultiheadAttention.train(self, mode)
         if mode:
@@ -242,35 +244,38 @@ class MultiheadAttention_Lora(nn.MultiheadAttention):
     #             del deltK
     #             del deltV
     #         self.merged = True
-    
+
     def forward(self, query: Tensor, key: Tensor, value: Tensor, key_padding_mask: Optional[Tensor] = None,
                 need_weights: bool = True, attn_mask: Optional[Tensor] = None):
         # Merge = False
         if self.r > 0 and not self.merged:
-            result = nn.MultiheadAttention.forward(self, query, key, value, key_padding_mask=key_padding_mask, need_weights=need_weights, attn_mask=attn_mask)
+            result = nn.MultiheadAttention.forward(self, query, key, value, key_padding_mask=key_padding_mask,
+                                                   need_weights=need_weights, attn_mask=attn_mask)
             if self.r > 0:
                 deltQ = self.lora_Q_B @ self.lora_Q_A
-                deltK = self.in_proj_weight[self.embed_dim:self.embed_dim*2]
+                deltK = self.in_proj_weight[self.embed_dim:self.embed_dim * 2]
                 deltV = self.lora_V_B @ self.lora_V_A
                 lora_in_proj_weight = torch.cat((deltQ, deltK, deltV), dim=0)
                 lora_out_proj_weight = self.lora_out_proj_B @ self.lora_out_proj_A
 
                 result = result[0] + F.multi_head_attention_forward(
-                query, key, value, self.embed_dim, self.num_heads,
-                lora_in_proj_weight, self.in_proj_bias,
-                self.bias_k, self.bias_v, self.add_zero_attn,
-                self.dropout, lora_out_proj_weight, self.out_proj.bias,
-                training=self.training,
-                key_padding_mask=key_padding_mask, need_weights=need_weights,
-                attn_mask=attn_mask)[0] * self.scaling, result[1]
+                    query, key, value, self.embed_dim, self.num_heads,
+                    lora_in_proj_weight, self.in_proj_bias,
+                    self.bias_k, self.bias_v, self.add_zero_attn,
+                    self.dropout, lora_out_proj_weight, self.out_proj.bias,
+                    training=self.training,
+                    key_padding_mask=key_padding_mask, need_weights=need_weights,
+                    attn_mask=attn_mask)[0] * self.scaling, result[1]
             return result
         # Merge =True
         else:
-            return nn.MultiheadAttention.forward(self, query, key, value, key_padding_mask=key_padding_mask, need_weights=need_weights, attn_mask=attn_mask)
+            return nn.MultiheadAttention.forward(self, query, key, value, key_padding_mask=key_padding_mask,
+                                                 need_weights=need_weights, attn_mask=attn_mask)
+
 
 class ResidualAttentionBlock_Lora(nn.Module):
     def __init__(self, d_model: int, n_head: int, attn_mask: torch.Tensor = None, r=1, a=0.):
-    # def __init__(self, d_model: int, n_head: int, attn_mask: torch.Tensor = None, r=1, a=1):
+        # def __init__(self, d_model: int, n_head: int, attn_mask: torch.Tensor = None, r=1, a=1):
         super().__init__()
 
         self.attn = MultiheadAttention_Lora(d_model, n_head, r=r, a=a)
@@ -299,25 +304,28 @@ class ResidualAttentionBlock_Lora(nn.Module):
 
 class Transformer_Lora(nn.Module):
     def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None, r: int = 1, a: float = 0.):
-    # def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None, r: int = 1, a=1):
+        # def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None, r: int = 1, a=1):
         super().__init__()
         self.width = width
         self.layers = layers
-        self.resblocks = nn.Sequential(*[ResidualAttentionBlock_Lora(width, heads, attn_mask, r=r, a=a) for _ in range(layers)])
+        self.resblocks = nn.Sequential(
+            *[ResidualAttentionBlock_Lora(width, heads, attn_mask, r=r, a=a) for _ in range(layers)])
 
     def forward(self, x: torch.Tensor):
         return self.resblocks(x)
 
 
 class VisionTransformer_Lora(nn.Module):
-    def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int, r: int = 1, a: float = 0.):
-    # def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int, r: int = 1, a=1):
+    def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int,
+                 r: int = 1, a: float = 0.):
+        # def __init__(self, input_resolution: int, patch_size: int, width: int, layers: int, heads: int, output_dim: int, r: int = 1, a=1):
         super().__init__()
         self.input_resolution = input_resolution
         self.output_dim = output_dim
         # self.conv1 = lora.Conv2d(in_channels=3, out_channels=width, kernel_size=patch_size, stride=patch_size, bias=False, r=r, lora_alpha=a)
         # self.conv1 = nn.Conv2d(in_channels=3, out_channels=width, kernel_size=patch_size, stride=patch_size, bias=False)
-        self.conv1 = Lora_conv2d(in_channels=3, out_channels=width, kernel_size=patch_size, stride=patch_size, bias=False, r=r, lora_alpha=a)
+        self.conv1 = Lora_conv2d(in_channels=3, out_channels=width, kernel_size=patch_size, stride=patch_size,
+                                 bias=False, r=r, lora_alpha=a)
 
         scale = width ** -0.5
         self.class_embedding = nn.Parameter(scale * torch.randn(width))
@@ -334,7 +342,9 @@ class VisionTransformer_Lora(nn.Module):
         x = self.conv1(x)  # shape = [*, width, grid, grid]
         x = x.reshape(x.shape[0], x.shape[1], -1)  # shape = [*, width, grid ** 2]
         x = x.permute(0, 2, 1)  # shape = [*, grid ** 2, width]
-        x = torch.cat([self.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device), x], dim=1)  # shape = [*, grid ** 2 + 1, width]
+        x = torch.cat(
+            [self.class_embedding.to(x.dtype) + torch.zeros(x.shape[0], 1, x.shape[-1], dtype=x.dtype, device=x.device),
+             x], dim=1)  # shape = [*, grid ** 2 + 1, width]
         x = x + self.positional_embedding.to(x.dtype)
         x = self.ln_pre(x)
 
@@ -502,7 +512,6 @@ class CLIP_Lora(nn.Module):
         return logits_per_image, logits_per_text
 
 
-
 def convert_weights(model: nn.Module):
     """Convert applicable model parameters to fp16"""
 
@@ -532,12 +541,14 @@ def build_model(state_dict: dict, r=1, a=0):
 
     if vit:
         vision_width = state_dict["visual.conv1.weight"].shape[0]
-        vision_layers = len([k for k in state_dict.keys() if k.startswith("visual.") and k.endswith(".attn.in_proj_weight")])
+        vision_layers = len(
+            [k for k in state_dict.keys() if k.startswith("visual.") and k.endswith(".attn.in_proj_weight")])
         vision_patch_size = state_dict["visual.conv1.weight"].shape[-1]
         grid_size = round((state_dict["visual.positional_embedding"].shape[0] - 1) ** 0.5)
         image_resolution = vision_patch_size * grid_size
     else:
-        counts: list = [len(set(k.split(".")[2] for k in state_dict if k.startswith(f"visual.layer{b}"))) for b in [1, 2, 3, 4]]
+        counts: list = [len(set(k.split(".")[2] for k in state_dict if k.startswith(f"visual.layer{b}"))) for b in
+                        [1, 2, 3, 4]]
         vision_layers = tuple(counts)
         vision_width = state_dict["visual.layer1.0.conv1.weight"].shape[0]
         output_width = round((state_dict["visual.attnpool.positional_embedding"].shape[0] - 1) ** 0.5)
