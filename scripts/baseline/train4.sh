@@ -1,15 +1,13 @@
-for DATA in fgvc_aircraft
+for DATASET in caltech101 dtd fgvc_aircraft food101 eurosat ucf101 oxford_flowers oxford_pets stanford_cars imagenet sun397
 do
-    for alpha in 0.4 0.6 2.
+    for shots in 16 8 4 2 1
     do
-        for lr in 5e-5 2e-5 2e-4
+        for seed in 1 2 3
         do
-            CUDA_VISIBLE_DEVICES=2 python train_wandb_iter_val.py \
-            --dataset-config-file /home/tanhao/Baseline/configs/datasets/${DATA}.yaml \
-            --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
-            DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA ${alpha} MODEL.LORA.RANK 2 \
-            SEED 1 DATA_SEED 1 \
-            OPTIM.LORA_OPTIM True OPTIM.LR_LORA ${lr}
+            CUDA_VISIBLE_DEVICES=0 python train.py \
+            --dataset-config-file /home/tanhao/Baseline/configs/datasets/${DATASET}.yaml \
+            --config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption_t5/vit_b16_t5_base.yaml \
+            SEED ${seed} DATASET.NUM_SHOTS ${shots}
         done
     done
 done

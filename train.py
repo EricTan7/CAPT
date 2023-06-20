@@ -37,45 +37,9 @@ dataset_name = {
 }
 
 
-def getModelSize(model):
-    param_size = 0
-    param_sum = 0
-    trainable_param_sum = 0
-    trainable_param_size = 0
-    for param in model.parameters():
-        param_size += param.nelement() * param.element_size()
-        param_sum += param.nelement()
-        if param.requires_grad:
-            trainable_param_sum += param.nelement()
-            trainable_param_size += param.nelement() * param.element_size()
-    buffer_size = 0
-    buffer_sum = 0
-    for buffer in model.buffers():
-        buffer_size += buffer.nelement() * buffer.element_size()
-        buffer_sum += buffer.nelement()
-    all_size = (param_size + buffer_size) / 1024 / 1024
-    print('params总个数为：{:.3f}'.format(param_sum))
-    print('params大小为：{:.3f}MB'.format(param_size/1024/1024))
-    print('模型总大小为：{:.3f}MB'.format(all_size))
-    print('trainable params总个数为：{:.3f}'.format(trainable_param_sum))
-    print('trainable params大小为：{:.3f}MB'.format(trainable_param_size / 1024 / 1024))
-    return (param_size, param_sum, buffer_size, buffer_sum, all_size)
-
-
 def main(args):
     cfg = setup_cfg(args)
     logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
-
-    # run = wandb.init(project='baseline_caption_bert')    # baseline_ablation  baseline_cattn_vocabloss
-    # # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
-    # # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
-    # #     f'-{cfg.OPTIM.NAME}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
-    # #     f'-lr{cfg.OPTIM.LR}-it{cfg.OPTIM.MAX_ITER}-warmit{cfg.OPTIM.WARMUP_ITER}'
-    #
-    # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.MODEL.TEXT.ENCODER}-{cfg.INPUT.TEXT_AUG}' \
-    #     f'-iter{cfg.OPTIM.MAX_ITER}-lr{cfg.OPTIM.LR}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
-    #     f'-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
-    #     f'-{cfg.OPTIM.NAME}-warmit{cfg.OPTIM.WARMUP_ITER}'
 
     if cfg.SEED >= 0:
         logger.info("Setting fixed seed: {}".format(cfg.SEED))
@@ -98,26 +62,17 @@ def main(args):
     # 1.dataset
     data = DataManager(cfg)
 
-    # 2.model ( +optim +sche)
-    model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
-
-    # getModelSize(model)
-
-    image_loader = data.train_loader
-    val_loader = data.val_loader
-    test_loader = data.test_loader
-
-    # 3.train
-    if cfg.TRAINER.NAME in ["lpclip", "lpsam"]:
-        train_lpclip(cfg, model, data, args.local_rank)
-    elif cfg.TRAINER.NAME in ["baseline_cattn_vocabloss_shembed_zsinit_fixedfirst"]:
-        train_wandb_two_stage(cfg, model, data, args.local_rank)
-    elif "caption" in cfg.TRAINER.NAME:
-        train_caption(cfg, model, data, image_loader, val_loader, test_loader, args.local_rank)
-    elif ("wiseft" in cfg.TRAINER.NAME) or ("sattn" in cfg.TRAINER.NAME):
-        train_wandb_iter_wiseft_val(cfg, model, data, image_loader, val_loader, test_loader, args.local_rank)
-    else:
-        train_wandb_iter(cfg, model, data, args.local_rank)
+    # # 3.train
+    # if cfg.TRAINER.NAME in ["lpclip", "lpsam"]:
+    #     train_lpclip(cfg, model, data, args.local_rank)
+    # elif cfg.TRAINER.NAME in ["baseline_cattn_vocabloss_shembed_zsinit_fixedfirst"]:
+    #     train_wandb_two_stage(cfg, model, data, args.local_rank)
+    # elif "caption" in cfg.TRAINER.NAME:
+    #     train_caption(cfg, model, data, image_loader, val_loader, test_loader, args.local_rank)
+    # elif ("wiseft" in cfg.TRAINER.NAME) or ("sattn" in cfg.TRAINER.NAME):
+    #     train_wandb_iter_wiseft_val(cfg, model, data, image_loader, val_loader, test_loader, args.local_rank)
+    # else:
+    #     train_wandb_iter(cfg, model, data, args.local_rank)
 
 
 if __name__ == "__main__":
@@ -176,6 +131,9 @@ if __name__ == "__main__":
         default=None,
         nargs=argparse.REMAINDER,
         help="modify config options using the command-line",
+    )
+    parser.add_argument(
+        "--wandb-proj", type=str, default="baseline_caption", help="project name of wandb"
     )
     args = parser.parse_args()
     main(args)

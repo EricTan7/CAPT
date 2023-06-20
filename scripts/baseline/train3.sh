@@ -1,15 +1,16 @@
-# dtd
-for DATA in oxford_flowers stanford_cars
+for config in vit_b16_bert_base vit_b16_bert_large
 do
-    for r in 1 2 4 8
+    for DATASET in caltech101 dtd fgvc_aircraft food101 eurosat ucf101 oxford_flowers oxford_pets stanford_cars imagenet sun397
     do
-        for alpha in 0.4 1. 2. 8.
+        for shots in 16 8 4 2 1
         do
-            CUDA_VISIBLE_DEVICES=0 python train_wandb_iter_val.py \
-            --dataset-config-file /home/tanhao/Baseline/configs/datasets/${DATA}.yaml \
-            --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
-            DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA ${alpha} MODEL.LORA.RANK ${r} \
-            SEED 1 DATA_SEED 1
+            for seed in 1 2 3
+            do
+                CUDA_VISIBLE_DEVICES=0 python train.py \
+                --dataset-config-file /home/tanhao/Baseline/configs/datasets/${DATASET}.yaml \
+                --config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption_bert/${config}.yaml \
+                SEED ${seed} DATASET.NUM_SHOTS ${shots}
+            done
         done
     done
 done
