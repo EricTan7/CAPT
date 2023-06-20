@@ -1,6 +1,6 @@
-for config in vit_b16_bert_base vit_b16_bert_large
+for config in vit_b16_bert_large
 do
-    for DATASET in caltech101 dtd fgvc_aircraft food101 eurosat ucf101 oxford_flowers oxford_pets stanford_cars imagenet sun397
+    for DATASET in imagenet_wval
     do
         for shots in 16 8 4 2 1
         do
