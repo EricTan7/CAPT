@@ -25,4 +25,4 @@ from .baseline_caption import Baseline_caption_wiseft, Baseline_caption_wiseft_m
     Baseline_caption_wiseft_multi_stream_rn
 from .baseline_caption_bert import Baseline_caption_wiseft_multi_stream_bert
 from .baseline_caption_t5 import Baseline_caption_wiseft_multi_stream_t5
-from .baseline_lora import Baseline_caption_wiseft_lora
+from .baseline_lora import Baseline_caption_wiseft_lora, Baseline_caption_wiseft_lora_fixedfirst

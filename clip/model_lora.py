@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch import nn
 import loralib as lora
 import math
-from .model import Transformer, VisionTransformer, ModifiedResNet
+from .model import Transformer, ModifiedResNet
 
 
 class Lora_Linear(lora.Linear):
@@ -302,6 +302,49 @@ class ResidualAttentionBlock_Lora(nn.Module):
         return x
 
 
+class ResidualAttentionBlock_Lora_mlp(nn.Module):
+    def __init__(self, d_model: int, n_head: int, attn_mask: torch.Tensor = None, r=1, a=0.):
+        # def __init__(self, d_model: int, n_head: int, attn_mask: torch.Tensor = None, r=1, a=1):
+        super().__init__()
+
+        # self.attn = MultiheadAttention_Lora(d_model, n_head, r=r, a=a)
+        self.attn = nn.MultiheadAttention(d_model, n_head)
+        self.ln_1 = LayerNorm(d_model)
+        self.mlp = nn.Sequential(OrderedDict([
+            # ("c_fc", lora.Linear(d_model, d_model * 4, r=r, lora_alpha=a)),
+            # ("c_fc", nn.Linear(d_model, d_model * 4)),
+            ("c_fc", Lora_Linear(d_model, d_model * 4, r=r, lora_alpha=a)),
+            ("gelu", QuickGELU()),
+            # ("c_proj", lora.Linear(d_model * 4, d_model, r=r, lora_alpha=a))
+            # ("c_proj", nn.Linear(d_model * 4, d_model)),
+            ("c_proj", Lora_Linear(d_model * 4, d_model, r=r, lora_alpha=a))
+        ]))
+        self.ln_2 = LayerNorm(d_model)
+        self.attn_mask = attn_mask
+
+    def attention(self, x: torch.Tensor):
+        self.attn_mask = self.attn_mask.to(dtype=x.dtype, device=x.device) if self.attn_mask is not None else None
+        return self.attn(x, x, x, need_weights=False, attn_mask=self.attn_mask)[0]
+
+    def forward(self, x: torch.Tensor):
+        x = x + self.attention(self.ln_1(x))
+        x = x + self.mlp(self.ln_2(x))
+        return x
+
+
+class Transformer_Lora_mlp(nn.Module):
+    def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None, r: int = 1, a: float = 0.):
+        # def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None, r: int = 1, a=1):
+        super().__init__()
+        self.width = width
+        self.layers = layers
+        self.resblocks = nn.Sequential(
+            *[ResidualAttentionBlock_Lora_mlp(width, heads, attn_mask, r=r, a=a) for _ in range(layers)])
+
+    def forward(self, x: torch.Tensor):
+        return self.resblocks(x)
+
+
 class Transformer_Lora(nn.Module):
     def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None, r: int = 1, a: float = 0.):
         # def __init__(self, width: int, layers: int, heads: int, attn_mask: torch.Tensor = None, r: int = 1, a=1):
@@ -332,8 +375,9 @@ class VisionTransformer_Lora(nn.Module):
         self.positional_embedding = nn.Parameter(scale * torch.randn((input_resolution // patch_size) ** 2 + 1, width))
         self.ln_pre = LayerNorm(width)
 
+        self.transformer = Transformer_Lora_mlp(width, layers, heads, r=r, a=a)
         # self.transformer = Transformer_Lora(width, layers, heads, r=r, a=a)
-        self.transformer = Transformer(width, layers, heads)
+        # self.transformer = Transformer(width, layers, heads)
 
         self.ln_post = LayerNorm(width)
         self.proj = nn.Parameter(scale * torch.randn(width, output_dim))
@@ -406,6 +450,14 @@ class CLIP_Lora(nn.Module):
                 a=a,
             )
 
+        self.transformer = Transformer_Lora_mlp(
+            width=transformer_width,
+            layers=transformer_layers,
+            heads=transformer_heads,
+            attn_mask=self.build_attention_mask(),
+            r=r,
+            a=a
+        )
         # self.transformer = Transformer_Lora(
         #     width=transformer_width,
         #     layers=transformer_layers,
@@ -414,12 +466,12 @@ class CLIP_Lora(nn.Module):
         #     r=r,
         #     a=a
         # )
-        self.transformer = Transformer(
-            width=transformer_width,
-            layers=transformer_layers,
-            heads=transformer_heads,
-            attn_mask=self.build_attention_mask()
-        )
+        # self.transformer = Transformer(
+        #     width=transformer_width,
+        #     layers=transformer_layers,
+        #     heads=transformer_heads,
+        #     attn_mask=self.build_attention_mask()
+        # )
 
         self.embed_dim = embed_dim
         self.vocab_size = vocab_size
