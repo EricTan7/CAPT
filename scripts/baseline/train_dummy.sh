@@ -10,7 +10,7 @@ for DATASET in fgvc_aircraft eurosat oxford_pets sun397
 do
     for SHOTS in 16 8 4 2 1
     do
-        WANDB_API_KEY=40afa4ca3f265a034bccdf4e176b2f2254081f21 WANDB_MODE=offline python train_wandb_iter_val.py \
+        WANDB_API_KEY=2a0ff77c64888b3bd539c7873069809fbfeb6059 WANDB_MODE=offline python train_wandb_iter_val.py \
         --dataset-config-file /data/run01/scz0bkt/code/Baseline/configs/datasets/${DATASET}.yaml \
         --config-file /data/run01/scz0bkt/code/Baseline/configs/trainers/Baseline_sattn/vit_b16.yaml \
         DATASET.NUM_SHOTS ${SHOTS}

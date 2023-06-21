@@ -1,2 +1,4 @@
 DATASET:
   NAME: "OxfordPets"
+  DIRNAME: "oxford_pets"
+  

@@ -2,10 +2,11 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from tabulate import tabulate
 import logging
-
+import os
+import json
 from tools.utils import read_image
 import torch.distributed as dist
-
+import nori2 as nori
 from datasets.transforms import build_transform
 from datasets.caltech101 import Caltech101
 from datasets.dtd import DescribableTextures
@@ -24,6 +25,10 @@ from datasets.imagenet_sketch import ImageNetSketch
 from datasets.imagenetv2 import ImageNetV2
 from datasets.imagenet import ImageNet_wval
 
+from PIL import Image
+import cv2
+import numpy as np
+import io
 
 FACTORY = {
     'Caltech101': Caltech101,
@@ -108,9 +113,9 @@ class DataManager():
 
         # 1.dataset + transform
         dataset = FACTORY[cfg.DATASET.NAME](cfg)    # dataset.train,  dataset.val,  dataset.test
-        train_set = DatasetWrapper(cfg, dataset.train, transform=tfm_train, caption=cfg.MODEL.CAPTION)
-        val_set = DatasetWrapper(cfg, dataset.val, transform=tfm_test, caption=False)
-        test_set = DatasetWrapper(cfg, dataset.test, transform=tfm_test, caption=False)
+        train_set = DatasetWrapper_nori(cfg, dataset.train, transform=tfm_train, caption=cfg.MODEL.CAPTION)
+        val_set = DatasetWrapper_nori(cfg, dataset.val, transform=tfm_test, caption=False)
+        test_set = DatasetWrapper_nori(cfg, dataset.test, transform=tfm_test, caption=False)
 
         # 2.dataloader
         test_batch = cfg.DATALOADER.TEST.BATCH_SIZE
@@ -220,6 +225,66 @@ class DatasetWrapper(Dataset):
             output["img"] = img0
 
         return output
+
+
+class DatasetWrapper_nori(Dataset):
+    def __init__(self, cfg, data_source, transform=None, caption=False):
+        self.cfg = cfg
+        self.data_source = data_source
+        self.transform = transform  # accept list (tuple) as input
+        self.use_caption = caption
+        root = os.path.abspath(os.path.expanduser(cfg.DATASET.ROOT))
+        self.dataset_dir = os.path.join(root, cfg.DATASET.DIRNAME)
+        path2id = json.load(open(self.dataset_dir + '/' + 'path2id.json', "r"))
+        for ann in self.data_source:
+           ann['nori_id'] = path2id[os.path.join(*ann['impath'].split('/')[-3:])]
+        self.nori_fetcher = None
+
+    def __len__(self):
+        return len(self.data_source)
+    
+    def _check_nori_fetcher(self):
+        """Lazy initialize nori fetcher. In this way, `NoriDataset` can be pickled and used
+            in multiprocessing.
+        """
+        if self.nori_fetcher is None:
+            self.nori_fetcher = nori.Fetcher()
+    
+    def __getitem__(self, idx):
+        self._check_nori_fetcher()
+        item = self.data_source[idx]
+
+        if self.use_caption:
+            output = {
+                "label": item['label'],
+                "impath": item['impath'],
+                "index": idx,
+                "tokenized_caption": item['tokenized_caption']
+            }
+
+        else:
+            output = {
+                "label": item['label'],
+                "impath": item['impath'],
+                "index": idx
+            }
+
+        nori_id = item["nori_id"]
+        img_bytes = self.nori_fetcher.get(nori_id)
+        try:
+            img = Image.open(io.BytesIO(img_bytes)).convert('RGB')
+        except:
+            img = cv2.imdecode(np.frombuffer(img_bytes, dtype=np.uint8), cv2.IMREAD_COLOR)
+            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            img = Image.fromarray(img)
+
+        if self.transform is not None:
+            output["img"] = self.transform(img)
+        else:
+            output["img"] = img
+
+        return output
+
 
 
 if __name__ == '__main__':

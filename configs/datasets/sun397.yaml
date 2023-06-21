@@ -1,2 +1,3 @@
 DATASET:
   NAME: "SUN397"
+  DIRNAME: "sun397"

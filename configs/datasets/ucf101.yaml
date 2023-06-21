@@ -1,2 +1,3 @@
 DATASET:
   NAME: "UCF101"
+  DIRNAME: "ucf101"

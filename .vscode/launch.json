@@ -1,0 +1,36 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Python: train File",
+            "type": "python",
+            "request": "launch",
+            "program": "/home/lijun07/code/CAPT/train_wandb_iter_val.py",
+            "console": "integratedTerminal",
+            "env": {
+                "WANDB_API_KEY": "2a0ff77c64888b3bd539c7873069809fbfeb6059",
+                "WANDB_MODE": "offline",
+            },
+            "args": [
+                "--dataset-config-file",
+                "/home/lijun07/code/CAPT/configs/datasets/caltech101.yaml",
+                "--config-file",
+                "/home/lijun07/code/CAPT/configs/trainers/Baseline_lora/vit_b16.yaml",
+                "DATASET.NUM_SHOTS",
+                "16"
+            ],
+            "justMyCode": true
+        }
+    ]
+}

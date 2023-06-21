@@ -41,7 +41,7 @@ def main(args):
     cfg = setup_cfg(args)
     logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
 
-    run = wandb.init(project=args.wandb_proj)    # 'baseline_caption' baseline_ablation  baseline_cattn_vocabloss
+    run = wandb.init(project=args.wandb_proj, dir='/data/')    # 'baseline_caption' baseline_ablation  baseline_cattn_vocabloss
     # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
     # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
     #     f'-{cfg.OPTIM.NAME}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
@@ -151,8 +151,8 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=str, default="/mnt/sdb/tanhao/recognition/", help="path to dataset")
-    parser.add_argument("--output-dir", type=str, default="/mnt/sdb/tanhao/logs/Baseline/others", help="output directory")
+    parser.add_argument("--root", type=str, default="/data/datasets", help="path to dataset")
+    parser.add_argument("--output-dir", type=str, default="/data/output/TGPT", help="output directory")
     parser.add_argument(
         "--resume",
         type=str,
@@ -207,7 +207,7 @@ if __name__ == "__main__":
         help="modify config options using the command-line",
     )
     parser.add_argument(
-        "--wandb-proj", type=str, default="baseline_caption", help="project name of wandb"
+        "--wandb-proj", type=str, default="LJ", help="project name of wandb"
     )
     args = parser.parse_args()
     main(args)

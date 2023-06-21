@@ -67,6 +67,7 @@ _C.DATASET = CN()
 # Directory where datasets are stored
 _C.DATASET.ROOT = "/mnt/sdb/tanhao/recognition/"
 _C.DATASET.NAME = ""
+_C.DATASET.DIRNAME = ""
 _C.DATASET.FEA_ROOT = "/mnt/sdb/tanhao/recognition/features/"   # the directory to save the extracted features
 # List of source/target domains' names (strings)
 # Do not apply to some datasets, which have pre-defined splits
