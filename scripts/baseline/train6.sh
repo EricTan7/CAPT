@@ -1,15 +1,15 @@
-for DATA in fgvc_aircraft
+# fgvc_aircraft oxford_pets stanford_cars dtd eurosat oxford_flowers
+for DATASET in eurosat
 do
-    for lr in 7e-5 2e-5
+    for r in 2 4 8
     do
-        for iter in 25600 19200 12800
+        for alpha in 0.4 0.6 1. 2.
         do
-            CUDA_VISIBLE_DEVICES=1 python train_wandb_iter_val.py \
-            --dataset-config-file /home/tanhao/Baseline/configs/datasets/${DATA}.yaml \
+            CUDA_VISIBLE_DEVICES=5 python train_wandb_iter_val.py \
+            --dataset-config-file /home/tanhao/Baseline/configs/datasets/${DATASET}.yaml \
             --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
-            DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 0.4 MODEL.LORA.RANK 2 \
-            SEED 1 DATA_SEED 1 \
-            OPTIM.LR ${lr} OPTIM.MAX_ITER ${iter}
+            DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA ${alpha} MODEL.LORA.RANK ${r} \
+            OPTIM.MAX_ITER 19200 OPTIM.LR 5e-5
         done
     done
 done
