@@ -41,7 +41,7 @@ def main(args):
     cfg = setup_cfg(args)
     logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
 
-    run = wandb.init(project=args.wandb_proj, dir='/data/')    # 'baseline_caption' baseline_ablation  baseline_cattn_vocabloss
+    run = wandb.init(project=args.wandb_proj)    # 'baseline_caption' baseline_ablation  baseline_cattn_vocabloss
     # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
     # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
     #     f'-{cfg.OPTIM.NAME}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
@@ -78,60 +78,6 @@ def main(args):
     # 2.model ( +optim +sche)
     model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
 
-    # prepare extracted features
-    # features_root = "/data/run01/scz0bkt/datasets/recognition_features/image/ViT-B-16_0/"
-    # features_file = f"shot_{cfg.DATASET.NUM_SHOTS}-seed_{cfg.SEED}.pth"
-    # ccrop_features_path = os.path.join(features_root, cfg.DATASET.NAME, dataset_name[cfg.DATASET.NAME], 'none', features_file)
-    # ccrop_features = torch.load(ccrop_features_path)
-    #
-    # image_features_path = os.path.join(features_root, cfg.DATASET.NAME, dataset_name[cfg.DATASET.NAME], 'flip_view_1', features_file)
-    # image_features = torch.load(image_features_path)
-    # train_features = torch.cat([ccrop_features['train']['features'], image_features['train']['features']], dim=0)
-    # train_labels = torch.cat([ccrop_features['train']['labels'], image_features['train']['labels']], dim=0)
-    #
-    # image_train_dataset = TensorDataset(
-    #     train_features,
-    #     train_labels
-    # )
-    # image_val_dataset = TensorDataset(
-    #     ccrop_features['val']['features'],
-    #     ccrop_features['val']['labels']
-    # )
-    #
-    # test_features_path = os.path.join(features_root, cfg.DATASET.NAME, dataset_name[cfg.DATASET.NAME], "test.pth")
-    # test_features = torch.load(test_features_path)
-    # test_dataset = TensorDataset(
-    #     test_features['features'],
-    #     test_features['labels']
-    # )
-    #
-    # batch_size = cfg.DATALOADER.TRAIN_X.BATCH_SIZE
-    # image_loader = DataLoader(
-    #     image_train_dataset,
-    #     batch_size=batch_size,
-    #     shuffle=True,
-    #     num_workers=args.num_workers,
-    #     pin_memory=True,
-    #     drop_last=False,
-    # )
-    #
-    # val_loader = DataLoader(
-    #     image_val_dataset,
-    #     batch_size=batch_size,
-    #     shuffle=False,
-    #     num_workers=args.num_workers,
-    #     pin_memory=True,
-    # )
-    #
-    # test_batch_size = cfg.DATALOADER.TEST.BATCH_SIZE
-    # test_loader = DataLoader(
-    #     test_dataset,
-    #     batch_size=test_batch_size,
-    #     shuffle=False,
-    #     num_workers=args.num_workers,
-    #     pin_memory=True,
-    # )
-
     image_loader = data.train_loader
     val_loader = data.val_loader
     test_loader = data.test_loader
@@ -153,8 +99,8 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=str, default="/data/datasets", help="path to dataset")
-    parser.add_argument("--output-dir", type=str, default="/data/output/TGPT", help="output directory")
+    parser.add_argument("--root", type=str, default="/mnt/sdb/tanhao/recognition/", help="path to dataset")
+    parser.add_argument("--output-dir", type=str, default="/mnt/sdb/tanhao/logs/Baseline/others", help="output directory")
     parser.add_argument(
         "--resume",
         type=str,
@@ -209,7 +155,7 @@ if __name__ == "__main__":
         help="modify config options using the command-line",
     )
     parser.add_argument(
-        "--wandb-proj", type=str, default="LJ", help="project name of wandb"
+        "--wandb-proj", type=str, default="baseline_caption", help="project name of wandb"
     )
     args = parser.parse_args()
     main(args)
