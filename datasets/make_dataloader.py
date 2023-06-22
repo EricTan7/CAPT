@@ -129,7 +129,8 @@ class DataManager():
                                       num_workers=nw,
                                       shuffle=False,   # ddp, need to be False
                                       sampler=train_sampler,
-                                      drop_last=False)
+                                      drop_last=False,
+                                      persistent_workers=True)
         else:
             train_batch = cfg.DATALOADER.TRAIN_X.BATCH_SIZE
             train_sampler = torch.utils.data.sampler.RandomSampler(train_set)
@@ -137,21 +138,24 @@ class DataManager():
                                       batch_size=train_batch,
                                       sampler=train_sampler,
                                       num_workers=nw,
-                                      drop_last=False)
+                                      drop_last=False,
+                                      persistent_workers=True)
 
         test_sampler = torch.utils.data.sampler.RandomSampler(test_set)
         test_loader = DataLoader(test_set,
                                  batch_size=test_batch,
                                  shuffle=False,
                                  num_workers=nw,
-                                 drop_last=False)
+                                 drop_last=False,
+                                 persistent_workers=True)
 
         val_loader = DataLoader(val_set,
                                 batch_size=test_batch,
                                 shuffle=False,
                                 num_workers=nw,
                                 drop_last=False,
-                                pin_memory=True)
+                                pin_memory=True,
+                                persistent_workers=True)
 
         # Attributes
         self._num_classes = dataset.num_classes
