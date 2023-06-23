@@ -1464,7 +1464,7 @@ def test_wiseft_val(cfg, model, test_loader, ratio=0.5):
     wiseft_weights = (1 - ratio) * head.weight.data + ratio * zs_weights
     model.model.wiseft_head.fc.weight.data = wiseft_weights
     model.model.wiseft_head2.fc.weight.data = zs_weights
-    for batch_idx, batch in enumerate(tqdm(test_loader)):
+    for batch_idx, batch in enumerate(test_loader):
         with torch.no_grad():
             image, label = parse_batch(batch)
             logits, logits_wiseft, logits_wiseft2 = model(image)
