@@ -3,12 +3,23 @@ import pickle
 import json
 
 path2id = {}
-nori_path = '/data/datasets/imagenet/imagenet.train.nori.list'
+name2path = {}
+nori_path = '/data/datasets/imagenet/imagenet.val.nori.list'
+
+with open('/data/datasets/imagenet/path2id.json','r') as f:
+    path2id = json.load(f)
+
+with open('/data/datasets/imagenet/preprocessed.pkl', "rb") as f:
+    preprocessed = pickle.load(f)
+    test = preprocessed['test']
+    for item in test:
+        name2path[ item['impath'].split('/')[-1] ] = os.path.join(*item['impath'].split('/')[-3:])
+
 with open(nori_path) as g:
     l = g.readline()
     while l:
         ls = l.split()
-        path = os.path.join('train', ls[2])
+        path = name2path[ls[2]]
         print(path)
         path2id[path] = ls[0]
         l = g.readline()

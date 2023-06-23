@@ -24,7 +24,7 @@
             },
             "args": [
                 "--dataset-config-file",
-                "/home/lijun07/code/CAPT/configs/datasets/caltech101.yaml",
+                "/home/lijun07/code/CAPT/configs/datasets/imagenet_wval.yaml",
                 "--config-file",
                 "/home/lijun07/code/CAPT/configs/trainers/Baseline_lora/vit_b16.yaml",
                 "DATASET.NUM_SHOTS",

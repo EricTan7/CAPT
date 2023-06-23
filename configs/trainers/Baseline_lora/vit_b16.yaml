@@ -25,7 +25,7 @@ OPTIM:
   LR_LORA: 0.0001
 
 TRAIN:
-  PRINT_FREQ: 12800   # iters
+  PRINT_FREQ: 200   # iters
   TEST_FREQ: 200  # val
   SAVE_FREQ: 12800
   DIST_TRAIN: False
