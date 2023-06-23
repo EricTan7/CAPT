@@ -1403,7 +1403,7 @@ def val_wiseft_head(cfg, model, val_loader):
     zs_weights = deepcopy(model.model.zs_weights)  # check if need .clone(): no
     wiseft_weights = (1 - ratio) * head.weight.data + ratio * zs_weights
     model.model.wiseft_head.fc.weight.data = wiseft_weights
-    for batch_idx, batch in enumerate(tqdm(val_loader)):
+    for batch_idx, batch in enumerate(val_loader):
         with torch.no_grad():
             image, label = parse_batch(batch)
             logits, logits_wiseft, _ = model(image)
@@ -1433,7 +1433,7 @@ def val_head(cfg, model, val_loader):
     zs_weights = deepcopy(model.model.zs_weights)  # check if need .clone(): no
     wiseft_weights = (1 - ratio) * head.weight.data + ratio * zs_weights
     model.model.wiseft_head.fc.weight.data = wiseft_weights
-    for batch_idx, batch in enumerate(tqdm(val_loader)):
+    for batch_idx, batch in enumerate(val_loader):
         with torch.no_grad():
             image, label = parse_batch(batch)
             logits, logits_wiseft, _ = model(image)
