@@ -120,12 +120,14 @@ class DataManager():
         # 2.dataloader
         test_batch = cfg.DATALOADER.TEST.BATCH_SIZE
         nw = cfg.DATALOADER.NUM_WORKERS
+        # nw = 0
         if cfg.TRAIN.DIST_TRAIN:
             train_batch = cfg.DATALOADER.TRAIN_X.BATCH_SIZE // dist.get_world_size()
             train_sampler = torch.utils.data.distributed.DistributedSampler(train_set)
             train_loader = DataLoader(train_set,
                                       batch_size=train_batch,
-                                      pin_memory=True,
+                                      pin_memory=False,
+                                      persistent_workers=True,
                                       num_workers=nw,
                                       shuffle=False,   # ddp, need to be False
                                       sampler=train_sampler,
@@ -136,14 +138,17 @@ class DataManager():
             train_sampler = torch.utils.data.sampler.RandomSampler(train_set)
             train_loader = DataLoader(train_set,
                                       batch_size=train_batch,
+                                      pin_memory=False,
+                                      persistent_workers=True,
                                       sampler=train_sampler,
                                       num_workers=nw,
                                       drop_last=False,
                                       persistent_workers=True)
 
-        test_sampler = torch.utils.data.sampler.RandomSampler(test_set)
+        # test_sampler = torch.utils.data.sampler.RandomSampler(test_set)
         test_loader = DataLoader(test_set,
                                  batch_size=test_batch,
+                                 pin_memory=False,
                                  shuffle=False,
                                  num_workers=nw,
                                  drop_last=False,
@@ -151,10 +156,12 @@ class DataManager():
 
         val_loader = DataLoader(val_set,
                                 batch_size=test_batch,
+                                pin_memory=False,
+                                persistent_workers=True,
                                 shuffle=False,
                                 num_workers=nw,
                                 drop_last=False,
-                                pin_memory=True,
+                                pin_memory=False,
                                 persistent_workers=True)
 
         # Attributes
