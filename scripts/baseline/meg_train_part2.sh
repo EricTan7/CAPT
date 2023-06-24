@@ -1,17 +1,23 @@
-bash /home/lijun07/code/CAPT/scripts/baseline/train2.sh dtd 16 & \
-bash /home/lijun07/code/CAPT/scripts/baseline/train2.sh dtd 8 & \
-bash /home/lijun07/code/CAPT/scripts/baseline/train2.sh dtd 4 & \
-bash /home/lijun07/code/CAPT/scripts/baseline/train2.sh dtd 2 & \
-bash /home/lijun07/code/CAPT/scripts/baseline/train2.sh dtd 1 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh ucf101 16 & \
 
-bash /home/lijun07/code/CAPT/scripts/baseline/train2.sh fgvc_aircraft 16 & \
-bash /home/lijun07/code/CAPT/scripts/baseline/train2.sh fgvc_aircraft 8 & \
-bash /home/lijun07/code/CAPT/scripts/baseline/train2.sh fgvc_aircraft 4 & \
-bash /home/lijun07/code/CAPT/scripts/baseline/train2.sh fgvc_aircraft 2 & \
-bash /home/lijun07/code/CAPT/scripts/baseline/train2.sh fgvc_aircraft 1 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh ucf101 8 & \
 
-bash /home/lijun07/code/CAPT/scripts/baseline/train2.sh food101 16 & \
-bash /home/lijun07/code/CAPT/scripts/baseline/train2.sh food101 8 & \
-bash /home/lijun07/code/CAPT/scripts/baseline/train2.sh food101 4 & \
-bash /home/lijun07/code/CAPT/scripts/baseline/train2.sh food101 2 & \
-bash /home/lijun07/code/CAPT/scripts/baseline/train2.sh food101 1 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh ucf101 4 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh ucf101 2 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh ucf101 1 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh oxford_flowers 4 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh oxford_flowers 2 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh oxford_flowers 1 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh oxford_pets 4 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh oxford_pets 2 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh oxford_pets 1 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh stanford_cars 1 & \
