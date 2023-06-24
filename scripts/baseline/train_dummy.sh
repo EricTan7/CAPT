@@ -516,7 +516,7 @@ done
 
 # ====== fixed first: retain text encoder and fc but fixed first =======
 # 可调：iter + fix_epoch, lr, shots
-CUDA_VISIBLE_DEVICES=0 python train_wandb_iter_val.py \
+CUDA_VISIBLE_DEVICES=1 python train_wandb_iter_val.py \
 --dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
 --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16_fixedfirst.yaml \
 DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 0.4 MODEL.LORA.RANK 2 OPTIM.LR 5e-5

@@ -1722,7 +1722,8 @@ def train_wandb_iter_wiseft_val_fixedfirst(cfg, model, data, image_loader,
     # 2. meter()
     loss_meter = AverageMeter()
     cls_loss_meter = AverageMeter()
-    prompts_loss_meter = AverageMeter()
+    category_loss_meter = AverageMeter()
+    instance_loss_meter = AverageMeter()
     acc_meter = AverageMeter()
     batch_time = AverageMeter()
     scaler = GradScaler()
@@ -1745,12 +1746,13 @@ def train_wandb_iter_wiseft_val_fixedfirst(cfg, model, data, image_loader,
 
         start = time.time()
         try:
-            image, label = parse_batch(next(image_loader_iter))
+            image, label, caption = parse_batch_caption(next(image_loader_iter))
         except StopIteration:
             image_loader_iter = iter(image_loader)
-            image, label = parse_batch(next(image_loader_iter))
+            image, label, caption = parse_batch_caption(next(image_loader_iter))
 
-        output, loss_prompts = model(image, label)
+        output, loss_category, loss_instance = model(image, label, caption)
+        loss_prompts = loss_category + loss_instance
         loss = criterion(output, label) + loss_prompts
         loss_cls = loss - loss_prompts
         # loss = criterion(output, label)
@@ -1770,7 +1772,8 @@ def train_wandb_iter_wiseft_val_fixedfirst(cfg, model, data, image_loader,
 
         loss_meter.update(loss.item(), image.shape[0])
         cls_loss_meter.update(loss_cls.item(), image.shape[0])
-        prompts_loss_meter.update(loss_prompts.item(), image.shape[0])
+        category_loss_meter.update(loss_category.item(), image.shape[0])
+        instance_loss_meter.update(loss_instance.item(), image.shape[0])
         acc_meter.update(acc, 1)
 
         # compute time
@@ -1778,7 +1781,8 @@ def train_wandb_iter_wiseft_val_fixedfirst(cfg, model, data, image_loader,
         batch_time.update(time.time() - start)
 
         # log lr
-        wandb.log({'lr': model.get_current_lr()})
+        wandb.log({'lr': model.get_current_lr(),
+                   'lr_fc': model.get_specific_lr('cls_head')})
 
         meet_freq = iters % cfg.TRAIN.PRINT_FREQ == 0
         if meet_freq:
@@ -1794,7 +1798,8 @@ def train_wandb_iter_wiseft_val_fixedfirst(cfg, model, data, image_loader,
                 info += [f"time {batch_time.val:.3f} ({batch_time.avg:.3f})"]
                 info += [f"loss {loss_meter.val:.3f} ({loss_meter.avg:.3f})"]
                 info += [f"cls_loss {cls_loss_meter.val:.3f} ({cls_loss_meter.avg:.3f})"]
-                info += [f"prompts_loss {prompts_loss_meter.val:.3f} ({prompts_loss_meter.avg:.3f})"]
+                info += [f"category_loss {category_loss_meter.val:.3f} ({category_loss_meter.avg:.3f})"]
+                info += [f"instance_loss {instance_loss_meter.val:.3f} ({instance_loss_meter.avg:.3f})"]
                 info += [f"acc {acc_meter.val:.3f} ({acc_meter.avg:.3f})"]
                 if cfg.TRAIN.DIST_TRAIN and torch.cuda.device_count() > 1:
                     info += [f"lr {model.module.get_current_lr():.4e}"]
@@ -1805,22 +1810,13 @@ def train_wandb_iter_wiseft_val_fixedfirst(cfg, model, data, image_loader,
                 info += [f"eta {eta}"]
                 logger.info(" ".join(info))
 
-
-            if cfg.TRAINER.NAME == 'baseline_cattn_vocabloss_shembed_zsinit_lscale_lnable_wiseft_nxcattn':
-                wandb.log({'train loss': loss_meter.val,
-                           'train acc': acc_meter.val,
-                           'train cls loss': cls_loss_meter.val,
-                           'train prompts loss': prompts_loss_meter.val,
-                           'iter': iters,
-                           'logit scale': model.model.cls_head.logit_scale.cpu().detach()
-                           })
-            else:
-                wandb.log({'train loss': loss_meter.val,
-                           'train acc': acc_meter.val,
-                           'train cls loss': cls_loss_meter.val,
-                           'train prompts loss': prompts_loss_meter.val,
-                           'iter': iters
-                           })
+            wandb.log({'train loss': loss_meter.val,
+                       'train acc': acc_meter.val,
+                       'train cls loss': cls_loss_meter.val,
+                       'train category loss': category_loss_meter.val,
+                       'train instance loss': instance_loss_meter.val,
+                       'iter': iters
+                       })
 
         # 2.meet epoch: save checkpoint
         sdir = cfg.OUTPUT_DIR
@@ -1840,11 +1836,17 @@ def train_wandb_iter_wiseft_val_fixedfirst(cfg, model, data, image_loader,
             else:
                 if cfg.TRAIN.DIST_TRAIN and torch.cuda.device_count() > 1:
                     model.module.set_model_mode("test")
-                    results, test_loss = val_head(cfg, model, val_loader)
+                    if cfg.TRAIN.VAL_WISEFT:
+                        results, test_loss = val_wiseft_head(cfg, model, val_loader)
+                    else:
+                        results, test_loss = val_head(cfg, model, val_loader)
                     model.module.set_model_mode("train")
                 else:
                     model.set_model_mode("test")
-                    results, test_loss = val_head(cfg, model, val_loader)
+                    if cfg.TRAIN.VAL_WISEFT:
+                        results, test_loss = val_wiseft_head(cfg, model, val_loader)
+                    else:
+                        results, test_loss = val_head(cfg, model, val_loader)
                     model.set_model_mode("train")
                 if results["accuracy"] > best_val_dict["val_acc"]:
                     best_val_dict["iter"] = iters
@@ -1880,5 +1882,5 @@ def train_wandb_iter_wiseft_val_fixedfirst(cfg, model, data, image_loader,
                'test loss (wiseft_1.0)': test_wiseft_loss2})
 
     # save the best model
-    sdir = cfg.OUTPUT_DIR
-    model.save_model(0, sdir, is_best=True)
+    # sdir = cfg.OUTPUT_DIR
+    # model.save_model(0, sdir, is_best=True)
