@@ -1245,6 +1245,7 @@ def train_wandb_iter_wiseft_val(cfg, model, data, image_loader,
         "model": None
     }
 
+    test_freq = cfg.TRAIN.TEST_FREQ
     for iters in range(1, tot_iter+1):
         start = time.time()
         # update lr
@@ -1338,7 +1339,9 @@ def train_wandb_iter_wiseft_val(cfg, model, data, image_loader,
 
         # 3.meet epoch: do test
         # NOTE: change test_loader -> val_loader
-        if (iters % cfg.TRAIN.TEST_FREQ == 0) or iters == 1:
+        if iters >= (cfg.OPTIM.MAX_ITER // 2):
+            test_freq = cfg.TRAIN.TEST_FREQ * 4
+        if (iters % test_freq == 0) or iters == 1:
             if cfg.TRAIN.DIST_TRAIN and dist.get_rank() != 0:
                 pass
             else:
@@ -1522,6 +1525,7 @@ def train_caption(cfg, model, data, image_loader, val_loader, test_loader, local
         "model": None
     }
 
+    test_freq = cfg.TRAIN.TEST_FREQ
     for iters in range(1, tot_iter+1):
         model.set_model_mode("train")
         start = time.time()
@@ -1623,8 +1627,11 @@ def train_caption(cfg, model, data, image_loader, val_loader, test_loader, local
                 else:
                     model.save_model(iters, sdir, is_best=False)
 
+        if iters >= (cfg.OPTIM.MAX_ITER // 2):
+            test_freq = cfg.TRAIN.TEST_FREQ * 4
+
         # 3.meet epoch: do test
-        if (iters % cfg.TRAIN.TEST_FREQ == 0) or iters == 1:
+        if (iters % test_freq == 0) or iters == 1:
             if cfg.TRAIN.DIST_TRAIN and dist.get_rank() != 0:
                 pass
             else:
