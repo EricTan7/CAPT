@@ -450,14 +450,14 @@ class CLIP_Lora(nn.Module):
                 a=a,
             )
 
-        self.transformer = Transformer_Lora_mlp(
-            width=transformer_width,
-            layers=transformer_layers,
-            heads=transformer_heads,
-            attn_mask=self.build_attention_mask(),
-            r=r,
-            a=a
-        )
+        # self.transformer = Transformer_Lora_mlp(
+        #     width=transformer_width,
+        #     layers=transformer_layers,
+        #     heads=transformer_heads,
+        #     attn_mask=self.build_attention_mask(),
+        #     r=r,
+        #     a=a
+        # )
         # self.transformer = Transformer_Lora(
         #     width=transformer_width,
         #     layers=transformer_layers,
@@ -466,12 +466,12 @@ class CLIP_Lora(nn.Module):
         #     r=r,
         #     a=a
         # )
-        # self.transformer = Transformer(
-        #     width=transformer_width,
-        #     layers=transformer_layers,
-        #     heads=transformer_heads,
-        #     attn_mask=self.build_attention_mask()
-        # )
+        self.transformer = Transformer(
+            width=transformer_width,
+            layers=transformer_layers,
+            heads=transformer_heads,
+            attn_mask=self.build_attention_mask()
+        )
 
         self.embed_dim = embed_dim
         self.vocab_size = vocab_size
