@@ -69,15 +69,16 @@ def main(args):
         pass
     else:
         print_args(args, cfg)
-        logger.info("Collecting env info ...")
-        logger.info("** System info **\n{}\n".format(collect_env_info()))
+        # logger.info("Collecting env info ...")
+        # logger.info("** System info **\n{}\n".format(collect_env_info()))
 
     # 1.dataset
     data = DataManager(cfg)
 
     # 2.model ( +optim +sche)
     model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
-
+    trainable_param = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print('number of trainable params: {} M'.format(trainable_param / 1000000))
     # prepare extracted features
     # features_root = "/data/run01/scz0bkt/datasets/recognition_features/image/ViT-B-16_0/"
     # features_file = f"shot_{cfg.DATASET.NUM_SHOTS}-seed_{cfg.SEED}.pth"
