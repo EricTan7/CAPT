@@ -37,15 +37,63 @@ dataset_name = {
 }
 
 
+def getModelSize(model, logger):
+    param_size = 0
+    param_sum = 0
+    grad_param_size = 0
+    grad_param_sum = 0
+    grad_param_size_bonder, grad_param_size_fc, grad_param_size_lora = 0, 0, 0
+    grad_param_sum_bonder, grad_param_sum_fc, grad_param_sum_lora = 0, 0, 0
+
+    name_to_cal = ["prompt_learner", "cls_head", "lora"]
+
+    for name, param in model.named_parameters():
+        param_size += param.nelement() * param.element_size()
+        param_sum += param.nelement()
+        if param.requires_grad == True:
+            grad_param_size += param.nelement() * param.element_size()
+            grad_param_sum += param.nelement()
+
+        if name_to_cal[0] in name:
+            if param.requires_grad:
+                grad_param_size_bonder += param.nelement() * param.element_size()
+                grad_param_sum_bonder += param.nelement()
+        elif name_to_cal[1] in name:
+            if param.requires_grad:
+                grad_param_size_fc += param.nelement() * param.element_size()
+                grad_param_sum_fc += param.nelement()
+        elif name_to_cal[2] in name:
+            if param.requires_grad:
+                grad_param_size_lora += param.nelement() * param.element_size()
+                grad_param_sum_lora += param.nelement()
+        else:
+            if param.requires_grad:
+                print(name)
+    buffer_size = 0
+    buffer_sum = 0
+    for buffer in model.buffers():
+        buffer_size += buffer.nelement() * buffer.element_size()
+        buffer_sum += buffer.nelement()
+    all_size = (param_size + buffer_size) / 1024 / 1024
+
+    logger.info('total number of params:{:.2f} M'.format(param_sum/ 1000000))
+    logger.info('total size of params:{:.2f}MB'.format(param_size / 1024 / 1024))
+    logger.info('trainable number of params:{:.2f} M'.format(grad_param_sum/ 1000000))
+    logger.info('trainable size of params:{:.2f}MB'.format(grad_param_size/1024/1024))
+    logger.info('trainable params proportion:{:.2%}'.format(grad_param_sum/param_sum))
+    logger.info('buffer params:{:.2f} M'.format(buffer_sum / 1000000))
+    logger.info('trainable bonder:{:.2f} M'.format(grad_param_sum_bonder/ 1000000))
+    logger.info('trainable fc:{:.2f} M'.format(grad_param_sum_fc/ 1000000))
+    logger.info('trainable lora:{:.2f} M'.format(grad_param_sum_lora/ 1000000))
+
+    return (param_size, param_sum, grad_param_size)
+
+
 def main(args):
     cfg = setup_cfg(args)
     logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
 
-    run = wandb.init(project=args.wandb_proj, config=cfg, tags=["all-vision_mlp_lora"], dir='/data/')    # 'baseline_caption' baseline_ablation  baseline_cattn_vocabloss
-    # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
-    # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
-    #     f'-{cfg.OPTIM.NAME}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
-    #     f'-lr{cfg.OPTIM.LR}-it{cfg.OPTIM.MAX_ITER}-warmit{cfg.OPTIM.WARMUP_ITER}'
+    run = wandb.init(project=args.wandb_proj, config=cfg, tags=["all-head-mlp_lora"], dir='/data/')
 
     run.name = f'{cfg.MODEL.BACKBONE.NAME}-{cfg.DATASET.NAME}-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-r{cfg.MODEL.LORA.RANK}' \
         f'-a{cfg.MODEL.LORA.ALPHA}-{cfg.MODEL.TEXT.ENCODER}-{cfg.INPUT.TEXT_AUG}' \
@@ -65,13 +113,6 @@ def main(args):
         torch.cuda.set_device(args.local_rank)
         dist.init_process_group(backend='nccl', init_method='env://')
 
-    if cfg.TRAIN.DIST_TRAIN and dist.get_rank() != 0:
-        pass
-    else:
-        print_args(args, cfg)
-        # logger.info("Collecting env info ...")
-        # logger.info("** System info **\n{}\n".format(collect_env_info()))
-
     # 1.dataset
     data = DataManager(cfg)
 
@@ -79,63 +120,12 @@ def main(args):
     model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
     trainable_param = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print('number of trainable params: {} M'.format(trainable_param / 1000000))
-    # prepare extracted features
-    # features_root = "/data/run01/scz0bkt/datasets/recognition_features/image/ViT-B-16_0/"
-    # features_file = f"shot_{cfg.DATASET.NUM_SHOTS}-seed_{cfg.SEED}.pth"
-    # ccrop_features_path = os.path.join(features_root, cfg.DATASET.NAME, dataset_name[cfg.DATASET.NAME], 'none', features_file)
-    # ccrop_features = torch.load(ccrop_features_path)
-    #
-    # image_features_path = os.path.join(features_root, cfg.DATASET.NAME, dataset_name[cfg.DATASET.NAME], 'flip_view_1', features_file)
-    # image_features = torch.load(image_features_path)
-    # train_features = torch.cat([ccrop_features['train']['features'], image_features['train']['features']], dim=0)
-    # train_labels = torch.cat([ccrop_features['train']['labels'], image_features['train']['labels']], dim=0)
-    #
-    # image_train_dataset = TensorDataset(
-    #     train_features,
-    #     train_labels
-    # )
-    # image_val_dataset = TensorDataset(
-    #     ccrop_features['val']['features'],
-    #     ccrop_features['val']['labels']
-    # )
-    #
-    # test_features_path = os.path.join(features_root, cfg.DATASET.NAME, dataset_name[cfg.DATASET.NAME], "test.pth")
-    # test_features = torch.load(test_features_path)
-    # test_dataset = TensorDataset(
-    #     test_features['features'],
-    #     test_features['labels']
-    # )
-    #
-    # batch_size = cfg.DATALOADER.TRAIN_X.BATCH_SIZE
-    # image_loader = DataLoader(
-    #     image_train_dataset,
-    #     batch_size=batch_size,
-    #     shuffle=True,
-    #     num_workers=args.num_workers,
-    #     pin_memory=True,
-    #     drop_last=False,
-    # )
-    #
-    # val_loader = DataLoader(
-    #     image_val_dataset,
-    #     batch_size=batch_size,
-    #     shuffle=False,
-    #     num_workers=args.num_workers,
-    #     pin_memory=True,
-    # )
-    #
-    # test_batch_size = cfg.DATALOADER.TEST.BATCH_SIZE
-    # test_loader = DataLoader(
-    #     test_dataset,
-    #     batch_size=test_batch_size,
-    #     shuffle=False,
-    #     num_workers=args.num_workers,
-    #     pin_memory=True,
-    # )
-
     image_loader = data.train_loader
     val_loader = data.val_loader
     test_loader = data.test_loader
+
+    # logger.info("Trainable params statistics")
+    # getModelSize(model, logger)
 
     # 3.train
     if cfg.TRAINER.NAME in ["lpclip", "lpsam"]:
