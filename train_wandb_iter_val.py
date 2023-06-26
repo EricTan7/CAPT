@@ -123,8 +123,8 @@ def main(args):
     val_loader = data.val_loader
     test_loader = data.test_loader
 
-    logger.info("Trainable params statistics")
-    getModelSize(model, logger)
+    # logger.info("Trainable params statistics")
+    # getModelSize(model, logger)
 
     # 3.train
     if cfg.TRAINER.NAME in ["lpclip", "lpsam"]:
