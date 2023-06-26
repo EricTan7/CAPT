@@ -1,3 +1,4 @@
+
 bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh oxford_flowers 4 & \
 
 bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh oxford_flowers 2 & \
