@@ -55,6 +55,60 @@ def main(args):
     #     raise TypeError(f"Trainer {cfg.TRAINER.NAME} is not available.")
     model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
 
+    # prepare extracted features
+    # features_root = "/data/run01/scz0bkt/datasets/recognition_features/image/ViT-B-16_0/"
+    # features_file = f"shot_{cfg.DATASET.NUM_SHOTS}-seed_{cfg.SEED}.pth"
+    # ccrop_features_path = os.path.join(features_root, cfg.DATASET.NAME, dataset_name[cfg.DATASET.NAME], 'none', features_file)
+    # ccrop_features = torch.load(ccrop_features_path)
+    #
+    # image_features_path = os.path.join(features_root, cfg.DATASET.NAME, dataset_name[cfg.DATASET.NAME], 'flip_view_1', features_file)
+    # image_features = torch.load(image_features_path)
+    # train_features = torch.cat([ccrop_features['train']['features'], image_features['train']['features']], dim=0)
+    # train_labels = torch.cat([ccrop_features['train']['labels'], image_features['train']['labels']], dim=0)
+    #
+    # image_train_dataset = TensorDataset(
+    #     train_features,
+    #     train_labels
+    # )
+    # image_val_dataset = TensorDataset(
+    #     ccrop_features['val']['features'],
+    #     ccrop_features['val']['labels']
+    # )
+    #
+    # test_features_path = os.path.join(features_root, cfg.DATASET.NAME, dataset_name[cfg.DATASET.NAME], "test.pth")
+    # test_features = torch.load(test_features_path)
+    # test_dataset = TensorDataset(
+    #     test_features['features'],
+    #     test_features['labels']
+    # )
+    #
+    # batch_size = cfg.DATALOADER.TRAIN_X.BATCH_SIZE
+    # image_loader = DataLoader(
+    #     image_train_dataset,
+    #     batch_size=batch_size,
+    #     shuffle=True,
+    #     num_workers=args.num_workers,
+    #     pin_memory=True,
+    #     drop_last=False,
+    # )
+    #
+    # val_loader = DataLoader(
+    #     image_val_dataset,
+    #     batch_size=batch_size,
+    #     shuffle=False,
+    #     num_workers=args.num_workers,
+    #     pin_memory=True,
+    # )
+    #
+    # test_batch_size = cfg.DATALOADER.TEST.BATCH_SIZE
+    # test_loader = DataLoader(
+    #     test_dataset,
+    #     batch_size=test_batch_size,
+    #     shuffle=False,
+    #     num_workers=args.num_workers,
+    #     pin_memory=True,
+    # )
+
     # 3.train
     if cfg.TRAINER.NAME in ["lpclip", "lpsam"]:
         train_lpclip(cfg, model, data, args.local_rank)
