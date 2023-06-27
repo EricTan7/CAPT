@@ -93,7 +93,7 @@ def main(args):
     cfg = setup_cfg(args)
     logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
 
-    run = wandb.init(project=args.wandb_proj, config=cfg, tags=["all-head-mlp_lora"], dir='/data/')
+    run = wandb.init(project=args.wandb_proj, config=cfg, tags=["caption"], dir='/data/')
 
     run.name = f'{cfg.MODEL.BACKBONE.NAME}-{cfg.DATASET.NAME}-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-r{cfg.MODEL.LORA.RANK}' \
         f'-a{cfg.MODEL.LORA.ALPHA}-{cfg.MODEL.TEXT.ENCODER}-{cfg.INPUT.TEXT_AUG}' \

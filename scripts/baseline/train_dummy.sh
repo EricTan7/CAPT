@@ -513,6 +513,18 @@ do
     done
 done
 
+# onegpu.sh
+DATASET=$1
+SHOTS=$2
+ALPHA=$3
+RANK=$4
+
+CUDA_VISIBLE_DEVICES=0 WANDB_API_KEY=2a0ff77c64888b3bd539c7873069809fbfeb6059 WANDB_MODE=offline python /home/lijun07/code/CAPT/train_wandb_iter_val.py \
+    --dataset-config-file /home/lijun07/code/CAPT/configs/datasets/${DATASET}.yaml \
+    --config-file /home/lijun07/code/CAPT/configs/trainers/Baseline_lora/vit_b16.yaml \
+    DATASET.NUM_SHOTS ${SHOTS} MODEL.LORA.ALPHA ${ALPHA} MODEL.LORA.RANK ${RANK} \
+    OPTIM.MAX_ITER 19200 OPTIM.LR 5e-5
+
 
 # ====== fixed first: retain text encoder and fc but fixed first =======
 # 可调：iter + fix_epoch, lr, shots
@@ -558,3 +570,10 @@ CUDA_VISIBLE_DEVICES=0 python train_wandb_iter_val.py \
 --dataset-config-file /home/tanhao/Baseline/configs/datasets/dtd.yaml \
 --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
 DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 0.6 MODEL.LORA.RANK 4
+
+
+# =========== wo lora ================
+CUDA_VISIBLE_DEVICES=3 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/imagenet_wval.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_b16_multi_stream.yaml \
+DATASET.NUM_SHOTS 16
