@@ -76,15 +76,15 @@ def getModelSize(model, logger):
         buffer_sum += buffer.nelement()
     all_size = (param_size + buffer_size) / 1024 / 1024
 
-    logger.info('total number of params：{:.2f} M'.format(param_sum/ 1000000))
-    logger.info('total size of params：{:.2f}MB'.format(param_size / 1024 / 1024))
-    logger.info('trainable number of params：{:.2f} M'.format(grad_param_sum/ 1000000))
-    logger.info('trainable size of params：{:.2f}MB'.format(grad_param_size/1024/1024))
-    logger.info('trainable params proportion：{:.2%}'.format(grad_param_sum/param_sum))
-    logger.info('buffer params：{:.2f} M'.format(buffer_sum / 1000000))
-    logger.info('trainable bonder：{:.2f} M'.format(grad_param_sum_bonder/ 1000000))
-    logger.info('trainable fc：{:.2f} M'.format(grad_param_sum_fc/ 1000000))
-    logger.info('trainable lora：{:.2f} M'.format(grad_param_sum_lora/ 1000000))
+    logger.info('total number of params: {:.2f} M'.format(param_sum/ 1000000))
+    logger.info('total size of params: {:.2f}MB'.format(param_size / 1024 / 1024))
+    logger.info('trainable number of params: {:.2f} M'.format(grad_param_sum/ 1000000))
+    logger.info('trainable size of params: {:.2f}MB'.format(grad_param_size/1024/1024))
+    logger.info('trainable params proportion: {:.2%}'.format(grad_param_sum/param_sum))
+    logger.info('buffer params: {:.2f} M'.format(buffer_sum / 1000000))
+    logger.info('trainable bonder: {:.2f} M'.format(grad_param_sum_bonder/ 1000000))
+    logger.info('trainable fc: {:.2f} M'.format(grad_param_sum_fc/ 1000000))
+    logger.info('trainable lora: {:.2f} M'.format(grad_param_sum_lora/ 1000000))
 
     return (param_size, param_sum, grad_param_size)
 
@@ -93,7 +93,7 @@ def main(args):
     cfg = setup_cfg(args)
     logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
 
-    run = wandb.init(project=args.wandb_proj, config=cfg, tags=["all-head-mlp_lora"])
+    run = wandb.init(project=args.wandb_proj, config=cfg, tags=["caption"])
 
     run.name = f'{cfg.MODEL.BACKBONE.NAME}-{cfg.DATASET.NAME}-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-r{cfg.MODEL.LORA.RANK}' \
         f'-a{cfg.MODEL.LORA.ALPHA}-{cfg.MODEL.TEXT.ENCODER}-{cfg.INPUT.TEXT_AUG}' \
