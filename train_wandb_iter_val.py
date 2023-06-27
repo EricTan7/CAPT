@@ -103,7 +103,7 @@ def main(args):
     # run.name = 'all_mlp_lora'
 
     if cfg.SEED >= 0:
-        logger.info("Setting fixed seed: {}".format(cfg.SEED))
+        # logger.info("Setting fixed seed: {}".format(cfg.SEED))
         set_random_seed(cfg.SEED)
 
     if torch.cuda.is_available() and cfg.USE_CUDA:
