@@ -89,7 +89,6 @@ def getModelSize(model, logger):
 
     return (param_size, param_sum, grad_param_size)
 
-
 def main(args):
     cfg = setup_cfg(args)
     seeds = [1, 2, 3] if cfg.SIMPLE_SEED else [cfg.SEED]
@@ -99,7 +98,7 @@ def main(args):
                                   f"lr{cfg.OPTIM.LR}_iter{cfg.OPTIM.MAX_ITER}", f"seed{seed}")
         logger = setup_logger(cfg.TRAINER.NAME, output_dir, if_train=True)
 
-    run = wandb.init(project=args.wandb_proj, config=cfg, tags=["caption_se_pre_all"],, dir='/data/')
+        run = wandb.init(project=args.wandb_proj, config=cfg, tags=["caption_se_pre_all"])
 
         run.name = f'{cfg.MODEL.BACKBONE.NAME}-{cfg.DATASET.NAME}-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-r{cfg.MODEL.LORA.RANK}' \
             f'-a{cfg.MODEL.LORA.ALPHA}-{cfg.MODEL.TEXT.ENCODER}-{cfg.INPUT.TEXT_AUG}' \
@@ -154,7 +153,7 @@ def main(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-        parser.add_argument("--root", type=str, default="/data/datasets", help="path to dataset")
+    parser.add_argument("--root", type=str, default="/data/datasets", help="path to dataset")
     parser.add_argument("--output-dir", type=str, default="/data/output/TGPT", help="output directory")
     parser.add_argument(
         "--resume",
