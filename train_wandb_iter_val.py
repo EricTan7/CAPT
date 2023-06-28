@@ -8,10 +8,11 @@ from torch.utils.data import DataLoader
 from processor import train_wandb, train_lpclip, \
     train_wandb_two_stage, train_wandb_iter, \
     train_wandb_iter_wiseft, train_wandb_iter_wiseft_val, \
-    train_caption, train_wandb_iter_wiseft_val_fixedfirst
+    train_caption, train_wandb_iter_wiseft_val_fixedfirst, inference
 from tools.utils import set_random_seed, collect_env_info
 from tools.logger import setup_logger
 from tools.train_utils import *
+from average import average
 
 import wandb
 import warnings
@@ -91,60 +92,70 @@ def getModelSize(model, logger):
 
 def main(args):
     cfg = setup_cfg(args)
-    logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
+    seeds = [1, 2, 3] if cfg.SIMPLE_SEED else [cfg.SEED]
 
-    run = wandb.init(project=args.wandb_proj, config=cfg, tags=["caption"])
+    for seed in seeds:
+        output_dir = os.path.join(cfg.OUTPUT_DIR, cfg.DATASET.NAME, cfg.TRAINER.NAME, f"{cfg.MODEL.BACKBONE.NAME.replace('/','-')}_{cfg.DATASET.NUM_SHOTS}shots",
+                                  f"lr{cfg.OPTIM.LR}_iter{cfg.OPTIM.MAX_ITER}", f"seed{seed}")
+        logger = setup_logger(cfg.TRAINER.NAME, output_dir, if_train=True)
 
-    run.name = f'{cfg.MODEL.BACKBONE.NAME}-{cfg.DATASET.NAME}-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-r{cfg.MODEL.LORA.RANK}' \
-        f'-a{cfg.MODEL.LORA.ALPHA}-{cfg.MODEL.TEXT.ENCODER}-{cfg.INPUT.TEXT_AUG}' \
-        f'-iter{cfg.OPTIM.MAX_ITER}-lr{cfg.OPTIM.LR}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
-        f'-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
-        f'-{cfg.OPTIM.NAME}-warmit{cfg.OPTIM.WARMUP_ITER}-seed{cfg.SEED}'
-    # run.name = 'all_mlp_lora'
+        run = wandb.init(project=args.wandb_proj, config=cfg, tags=["caption_se_pre_all"])
 
-    if cfg.SEED >= 0:
-        # logger.info("Setting fixed seed: {}".format(cfg.SEED))
-        set_random_seed(cfg.SEED)
+        run.name = f'{cfg.MODEL.BACKBONE.NAME}-{cfg.DATASET.NAME}-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-r{cfg.MODEL.LORA.RANK}' \
+            f'-a{cfg.MODEL.LORA.ALPHA}-{cfg.MODEL.TEXT.ENCODER}-{cfg.INPUT.TEXT_AUG}' \
+            f'-iter{cfg.OPTIM.MAX_ITER}-lr{cfg.OPTIM.LR}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
+            f'-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
+            f'-{cfg.OPTIM.NAME}-warmit{cfg.OPTIM.WARMUP_ITER}-seed{seed}'
+        # run.name = 'all_mlp_lora'
 
-    if torch.cuda.is_available() and cfg.USE_CUDA:
-        torch.backends.cudnn.benchmark = True
+        if seed >= 0:
+            # logger.info("Setting fixed seed: {}".format(cfg.SEED))
+            set_random_seed(seed)
 
-    if cfg.TRAIN.DIST_TRAIN:
-        torch.cuda.set_device(args.local_rank)
-        dist.init_process_group(backend='nccl', init_method='env://')
+        if torch.cuda.is_available() and cfg.USE_CUDA:
+            torch.backends.cudnn.benchmark = True
 
-    # 1.dataset
-    data = DataManager(cfg)
+        if cfg.TRAIN.DIST_TRAIN:
+            torch.cuda.set_device(args.local_rank)
+            dist.init_process_group(backend='nccl', init_method='env://')
 
-    # 2.model ( +optim +sche)
-    model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
+        # 1.dataset
+        data = DataManager(cfg)
 
-    image_loader = data.train_loader
-    val_loader = data.val_loader
-    test_loader = data.test_loader
+        # 2.model ( +optim +sche)
+        model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
 
-    # logger.info("Trainable params statistics")
-    # getModelSize(model, logger)
+        image_loader = data.train_loader
+        val_loader = data.val_loader
+        test_loader = data.test_loader
 
-    # 3.train
-    if cfg.TRAINER.NAME in ["lpclip", "lpsam"]:
-        train_lpclip(cfg, model, data, args.local_rank)
-    elif cfg.TRAINER.NAME in ["baseline_cattn_vocabloss_shembed_zsinit_fixedfirst"]:
-        train_wandb_two_stage(cfg, model, data, args.local_rank)
-    elif 'fixedfirst' in cfg.TRAINER.NAME:
-        train_wandb_iter_wiseft_val_fixedfirst(cfg, model, data, image_loader, val_loader, test_loader, args.local_rank)
-    elif "caption" in cfg.TRAINER.NAME:
-        train_caption(cfg, model, data, image_loader, val_loader, test_loader, args.local_rank)
-    elif ("wiseft" in cfg.TRAINER.NAME) or ("sattn" in cfg.TRAINER.NAME):
-        train_wandb_iter_wiseft_val(cfg, model, data, image_loader, val_loader, test_loader, args.local_rank)
-    else:
-        train_wandb_iter(cfg, model, data, args.local_rank)
+        # logger.info("Trainable params statistics")
+        # getModelSize(model, logger)
+
+        # 3.train
+        if cfg.TRAINER.NAME in ["lpclip", "lpsam"]:
+            train_lpclip(cfg, model, data, args.local_rank)
+        elif cfg.TRAINER.NAME in ["baseline_cattn_vocabloss_shembed_zsinit_fixedfirst"]:
+            train_wandb_two_stage(cfg, model, data, args.local_rank)
+        elif 'fixedfirst' in cfg.TRAINER.NAME:
+            train_wandb_iter_wiseft_val_fixedfirst(cfg, model, data, image_loader, val_loader, test_loader, output_dir, args.local_rank)
+        elif "caption" in cfg.TRAINER.NAME:
+            train_caption(cfg, model, data, image_loader, val_loader, test_loader, output_dir, args.local_rank)
+            # inference(cfg, model, data, image_loader, val_loader, test_loader, output_dir, args.local_rank)
+        elif ("wiseft" in cfg.TRAINER.NAME) or ("sattn" in cfg.TRAINER.NAME):
+            train_wandb_iter_wiseft_val(cfg, model, data, image_loader, val_loader, test_loader, output_dir, args.local_rank)
+        else:
+            train_wandb_iter(cfg, model, data, args.local_rank)
+
+    # average across seeds: mean, std
+    if len(seeds) > 1:
+        average(os.path.join(cfg.OUTPUT_DIR, cfg.DATASET.NAME, cfg.TRAINER.NAME))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=str, default="/mnt/sdb/tanhao/recognition/", help="path to dataset")
-    parser.add_argument("--output-dir", type=str, default="/mnt/sdb/tanhao/logs/Baseline/others", help="output directory")
+    parser.add_argument("--output-dir", type=str, default="/mnt/nas/TrueNas1/tanhao/logs/TGPT", help="output directory")
     parser.add_argument(
         "--resume",
         type=str,

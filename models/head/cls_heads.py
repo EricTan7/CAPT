@@ -292,3 +292,77 @@ class ClsHead_cat_lscale_img_text(nn.Module):
         x = x * self.logit_scale.exp()
 
         return x
+
+
+class ClsHead_cat_lscale_se_pre_all(nn.Module):
+    def __init__(self, classnames, clip_model, logit_scale, bias=False, reduction=16):
+        super().__init__()
+        vis_dim = clip_model.visual.output_dim
+        n_cls = len(classnames)
+
+        self.se_img = nn.Sequential(
+            nn.Linear(vis_dim, vis_dim // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(vis_dim // reduction, vis_dim, bias=False),
+            nn.Sigmoid()
+        )
+
+        self.se_text = nn.Sequential(
+            nn.Linear(vis_dim, vis_dim // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(vis_dim // reduction, vis_dim, bias=False),
+            nn.Sigmoid()
+        )
+
+        self.fc = nn.Linear(vis_dim*2, n_cls, bias=bias)
+        self.logit_scale = logit_scale
+
+    def forward(self, img_fea, text_fea):   # [B,1024] [B,1024]
+        img_fea = self.se_img(img_fea) * img_fea
+        text_fea = self.se_text(text_fea) * text_fea
+
+        x = torch.cat([img_fea, text_fea], dim=1)
+        x = F.normalize(x, dim=1)
+        x = self.fc(x)
+        x = x * self.logit_scale.exp()
+
+        return x
+
+
+class ClsHead_cat_lscale_se_post(nn.Module):
+    def __init__(self, classnames, clip_model, logit_scale, bias=False, reduction=16):
+        super().__init__()
+        vis_dim = clip_model.visual.output_dim
+        n_cls = len(classnames)
+
+        self.se = nn.Sequential(
+            nn.Linear(vis_dim, vis_dim // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(vis_dim // reduction, vis_dim, bias=False),
+            nn.Sigmoid()
+        )
+
+        self.fc = nn.Linear(vis_dim * 2, n_cls, bias=bias)
+        self.logit_scale = logit_scale
+
+    def forward(self, x):  # [B,1024]
+        x = self.se(x) * x
+        x = F.normalize(x, dim=1)
+        x = self.fc(x)
+        x = x * self.logit_scale.exp()
+
+        return x
+
+class se_layer(nn.Module):
+    def __init__(self, dim, reduction=16):
+        super().__init__()
+
+        self.se = nn.Sequential(
+            nn.Linear(dim, dim // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(dim // reduction, dim, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):  # [B,1024]
+        return self.se(x) * x
