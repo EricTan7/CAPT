@@ -1710,9 +1710,9 @@ def train_caption(cfg, model, data, image_loader, val_loader, test_loader, outpu
     with open(test_path, 'w') as f:
         json.dump(test_results, f)
 
-    # save the best model
-    sdir = output_dir
-    model.save_model(0, sdir, is_best=True)
+    # # save the best model
+    # sdir = output_dir
+    # model.save_model(0, sdir, is_best=True)
 
 def inference(cfg, model, data, image_loader, val_loader, test_loader, output_dir, local_rank):
     logger = logging.getLogger(cfg.TRAINER.NAME)
