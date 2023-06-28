@@ -46,17 +46,19 @@ def save_checkpoint(
     if not model_name:
         model_name = "model.pth.tar-" + str(epoch)
     fpath = osp.join(save_dir, model_name)
-    torch.save(state, fpath)
 
     # save current model name
-    checkpoint_file = osp.join(save_dir, "checkpoint")
-    checkpoint = open(checkpoint_file, "w+")
-    checkpoint.write("{}\n".format(osp.basename(fpath)))
-    checkpoint.close()
+    # checkpoint_file = osp.join(save_dir, "checkpoint")
+    # checkpoint = open(checkpoint_file, "w+")
+    # checkpoint.write("{}\n".format(osp.basename(fpath)))
+    # checkpoint.close()
 
     if is_best:
         best_fpath = osp.join(osp.dirname(fpath), "model-best.pth.tar")
-        shutil.copy(fpath, best_fpath)
+        # shutil.copy(fpath, best_fpath)
+        torch.save(state, best_fpath)
+    else:
+        torch.save(state, fpath)
 
 
 def load_checkpoint(fpath):
@@ -139,7 +141,7 @@ def load_pretrained_weights(model, weight_path):
     model.load_state_dict(model_dict)
 
     if len(matched_layers) == 0:
-        warnings.warn(
+        print(
             f"Cannot load {weight_path} (check the key names manually)"
         )
     else:

@@ -77,6 +77,18 @@ class BaseModel(nn.Module):
 
         for name in names:
             model_dict = self._models[name].state_dict()
+            # if 'clip' in name:
+            #     save_dict = OrderedDict()
+            #     for k, v in self._models[name].named_parameters():
+            #         if v.requires_grad:
+            #             save_dict[k] = model_dict[k]
+            # else:
+            #     save_dict = self._models[name].state_dict()
+
+            save_dict = OrderedDict()
+            for k, v in self._models[name].named_parameters():
+                if v.requires_grad:
+                    save_dict[k] = model_dict[k]
 
             optim_dict = None
             if self._optims[name] is not None:
@@ -89,7 +101,7 @@ class BaseModel(nn.Module):
             sdir = osp.join(directory, name)
             save_checkpoint(
                 {
-                    "state_dict": model_dict,
+                    "state_dict": save_dict,
                     "epoch": epoch,
                     "optimizer": optim_dict,
                     "scheduler": sched_dict,
@@ -134,6 +146,6 @@ class BaseModel(nn.Module):
             if "token_suffix" in state_dict:
                 del state_dict["token_suffix"]
 
-            self.logger.info("Loading weights to {} " 'from "{}" (epoch = {})'.format(name, model_path, epoch))
+            self.logger.info("Loading weights to {} " 'from "{}"'.format(name, model_path))
             # set strict=False
             self._models[name].load_state_dict(state_dict, strict=False)

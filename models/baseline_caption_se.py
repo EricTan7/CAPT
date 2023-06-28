@@ -16,7 +16,7 @@ from .bonder import CrossAttnBlock, CrossAttnBlock_nx, CrossAttnBlock_projkv, Cr
     CrossAttnBlock_nx_pe, CrossAttnBlock_nx_pe_auxi, CrossAttnBlock_nx_projk_pe_auxi, CrossAttnBlock_nx_projk_pe, \
     CrossAttnBlock_projkv_pe_rn
 
-import clip.clip_lora as clip
+from clip import clip
 from clip.simple_tokenizer import SimpleTokenizer as _Tokenizer
 from clip.simple_tokenizer import MySimpleTokenizer
 from datasets.templates import get_templates
@@ -56,7 +56,7 @@ def load_clip_to_cpu(cfg):
     except RuntimeError:
         state_dict = torch.load(model_path, map_location="cpu")
 
-    model = clip.build_model(state_dict or model.state_dict(), r=cfg.MODEL.LORA.RANK, a=cfg.MODEL.LORA.ALPHA)
+    model = clip.build_model(state_dict or model.state_dict())
 
     return model
 
@@ -82,9 +82,9 @@ class TextEncoder(nn.Module):
         x = x[torch.arange(x.shape[0]), tokenized_prompts.argmax(dim=-1)] @ self.text_projection
 
         return x
+    
 
-
-class PromptLearner_caption_lora(nn.Module):
+class PromptLearner_caption(nn.Module):
     def __init__(self, cfg, classnames, clip_model):
         super().__init__()
         n_cls = len(classnames)
@@ -201,17 +201,20 @@ class PromptLearner_caption_lora(nn.Module):
         return prompts_category, prompts_instance, loss_category, loss_instance
 
 
-class CustomCLIP_caption_lora(nn.Module):
+class CustomCLIP_caption_se_pre_all(nn.Module):
     def __init__(self, cfg, classnames, clip_model):
         super().__init__()
         device = 'cuda'
-        self.prompt_learner = PromptLearner_caption_lora(cfg, classnames, clip_model)
+        self.prompt_learner = PromptLearner_caption(cfg, classnames, clip_model)
         self.image_encoder = clip_model.visual
         self.text_encoder = TextEncoder(clip_model)
         self.logit_scale = torch.tensor(4.60517)
         self.dtype = clip_model.dtype
         self.backbone = cfg.MODEL.BACKBONE.NAME
-        self.clip_model = clip_model
+
+        # TODO if use, merge this into cls_head
+        self.se_img = se_layer(clip_model.visual.output_dim, reduction=16)
+        self.se_text = se_layer(clip_model.visual.output_dim, reduction=16)
 
         self.cls_head = ClsHead_cat_lscale(classnames, clip_model, self.logit_scale)
         self.wiseft_head = ClsHead_cat_lscale(classnames, clip_model, self.logit_scale)
@@ -261,7 +264,10 @@ class CustomCLIP_caption_lora(nn.Module):
         text_features_category, text_features_instance = text_features_category.float(), text_features_instance.float()
         image_cls = image_cls.float()
 
+        # NOTE ensemble over embedding space
         text_features = (text_features_category + text_features_instance) / 2.
+        image_cls = self.se_img(image_cls)
+        text_features = self.se_text(text_features)
 
         fused_fea = torch.cat([image_cls, text_features], dim=1)
         logits = self.cls_head(fused_fea)
@@ -273,7 +279,7 @@ class CustomCLIP_caption_lora(nn.Module):
         return logits, loss_category, loss_instance
 
 
-class Baseline_caption_wiseft_lora(BaseModel):
+class Baseline_caption_wiseft_se_pre_all(BaseModel):
     def __init__(self, cfg, classnames=None):
         super().__init__()
         self.logger = logging.getLogger(cfg.TRAINER.NAME)
@@ -285,22 +291,22 @@ class Baseline_caption_wiseft_lora(BaseModel):
         clip_model = load_clip_to_cpu(cfg)
 
         if cfg.TRAINER.PREC == "fp32" or cfg.TRAINER.PREC == "amp":
+            # CLIP's default precision is fp16
             clip_model.float()
 
-        # for param in clip_model.parameters():
-        #     param.requires_grad = False
+        for param in clip_model.parameters():
+            param.requires_grad = False
 
-        self.logger.info("Building Baseline_caption_wiseft_lora")
-        self.model = CustomCLIP_caption_lora(cfg, classnames, clip_model)
+        self.logger.info("Building Baseline_caption_wiseft_se_pre_all")
+        self.model = CustomCLIP_caption_se_pre_all(cfg, classnames, clip_model)
 
         self.logger.info("Turning off gradients in both the image and the text encoder")
-        name_to_update = ["prompt_learner", "cls_head"]
+        name_to_update = ["prompt_learner", "cls_head", "se_img", "se_text"]
 
         for name, param in self.model.named_parameters():
-            if (name_to_update[0] in name) or (name_to_update[1] in name):
+            if (name_to_update[0] in name) or (name_to_update[1] in name) or (name_to_update[2] in name) or (name_to_update[3] in name):
                 param.requires_grad_(True)
-            # NOTE lora has made it False
-            elif "lora_" not in name:
+            else:
                 param.requires_grad_(False)
 
         # Fix the weights of vocab head
@@ -313,39 +319,13 @@ class Baseline_caption_wiseft_lora(BaseModel):
                 enabled.add(name)
         self.logger.info(f"Parameters to be updated: {enabled}")
 
-        if cfg.OPTIM.LORA_OPTIM:
-            self.optim = build_optimizer([self.model.prompt_learner, self.model.cls_head], cfg.OPTIM)
-            self.sched = build_scheduler_iter(self.optim, cfg.OPTIM)
+        self.optim = build_optimizer([self.model.prompt_learner, self.model.cls_head], cfg.OPTIM)
+        self.sched = build_scheduler_iter(self.optim, cfg.OPTIM)
 
-            params = []
-            for n, p in self.model.clip_model.named_parameters():
-                if p.requires_grad:
-                    params.append(p)
-            self.optim_lora = build_optimizer(params, cfg.OPTIM, is_params=True, is_split=True)
-            self.sched_lora = build_scheduler_iter(self.optim_lora, cfg.OPTIM)
-
-            self.register_model("prompt_learner", self.model.prompt_learner, self.optim, self.sched)
-            self.register_model("cls_head", self.model.cls_head)
-            self.register_model("clip_model", self.model.clip_model, self.optim_lora, self.sched_lora)
-
-        else:
-            params = []
-            for n, p in self.model.named_parameters():
-                if p.requires_grad:
-                    params.append(p)
-
-            # self.optim = build_optimizer([self.model.prompt_learner, self.model.cls_head, self.model.clip_model], cfg.OPTIM)
-            self.optim = build_optimizer(params, cfg.OPTIM, is_params=True)
-            self.sched = build_scheduler_iter(self.optim, cfg.OPTIM)
-
-            self.register_model("prompt_learner", self.model.prompt_learner, self.optim, self.sched)
-            self.register_model("cls_head", self.model.cls_head)
-            # TODO only register lora params
-            self.register_model("clip_model", self.model.clip_model)
-
-        if cfg.MODEL.INIT_WEIGHTS:
-            self.load_model(directory=cfg.MODEL.INIT_WEIGHTS)
-
+        self.register_model("prompt_learner", self.model.prompt_learner, self.optim, self.sched)
+        self.register_model("cls_head", self.model.cls_head)
+        self.register_model("se_img", self.model.se_img)
+        self.register_model("se_text", self.model.se_text)
 
     def check_cfg(self, cfg):
         assert cfg.TRAINER.PREC in ["fp16", "fp32", "amp"]
@@ -354,87 +334,54 @@ class Baseline_caption_wiseft_lora(BaseModel):
         return self.model(image, label, caption)     # logits
 
 
-# === 一阶段：冻住fc，只训bonder；  二阶段：加入lora和fc ====
-class Baseline_caption_wiseft_lora_fixedfirst(BaseModel):
-    def __init__(self, cfg, classnames=None):
-        super().__init__()
-        self.logger = logging.getLogger(cfg.TRAINER.NAME)
-        self.check_cfg(cfg)
-        self.cfg = cfg
-        self.test_freq = cfg.TRAIN.TEST_FREQ
 
-        self.logger.info(f"Loading CLIP (backbone: {cfg.MODEL.BACKBONE.NAME})")
-        clip_model = load_clip_to_cpu(cfg)
-
-        if cfg.TRAINER.PREC == "fp32" or cfg.TRAINER.PREC == "amp":
-            clip_model.float()
-
-        # for param in clip_model.parameters():
-        #     param.requires_grad = False
-
-        self.logger.info("Building Baseline_caption_wiseft_lora_fixedfirst")
-        self.model = CustomCLIP_caption_lora(cfg, classnames, clip_model)
-
-        self.logger.info("Turning off gradients in both the image and the text encoder")
-        name_to_update = ["prompt_learner", "cls_head"]
-
-        for name, param in self.model.named_parameters():
-            if (name_to_update[0] in name) or (name_to_update[1] in name):
-                param.requires_grad_(True)
-            # NOTE lora has made it False
-            elif "lora_" not in name:
-                param.requires_grad_(False)
-
-        # Fix the weights of vocab head
-        self.model.prompt_learner.vocab_head.weight.requires_grad_(False)
-
-        # Double check
-        enabled = set()
-        for name, param in self.model.named_parameters():
-            if param.requires_grad:
-                enabled.add(name)
-        self.logger.info(f"Parameters to be updated: {enabled}")
-
-        self.optim_bonder = build_optimizer(self.model.prompt_learner, cfg.OPTIM)
-        self.sched_bonder = build_scheduler_iter(self.optim_bonder, cfg.OPTIM)
-
-        self.optim_fc = build_optimizer(self.model.cls_head, cfg.OPTIM)
-        self.sched_fc = build_scheduler_iter(self.optim_fc, cfg.OPTIM)
-
-        params = []
-        for n, p in self.model.clip_model.named_parameters():
-            if p.requires_grad:
-                params.append(p)
-        self.optim_lora = build_optimizer(params, cfg.OPTIM, is_params=True, is_split=False)
-        self.sched_lora = build_scheduler_iter(self.optim_lora, cfg.OPTIM)
-
-        self.register_model("prompt_learner", self.model.prompt_learner, self.optim_bonder, self.sched_bonder)
-        self.register_model("cls_head", self.model.cls_head, self.optim_fc, self.sched_fc)
-        self.register_model("clip_model", self.model.clip_model, self.optim_lora, self.sched_lora)
-
-    def check_cfg(self, cfg):
-        assert cfg.TRAINER.PREC in ["fp16", "fp32", "amp"]
-
-    def forward(self, image, label=None, caption=None):
-        return self.model(image, label, caption)     # logits
-
-
-# ========================= two stage =======================================
-class CustomCLIP_caption_lora_stage1(nn.Module):
+class CustomCLIP_caption_se_post(nn.Module):
     def __init__(self, cfg, classnames, clip_model):
         super().__init__()
         device = 'cuda'
-        self.prompt_learner = PromptLearner_caption_lora(cfg, classnames, clip_model)
+        self.prompt_learner = PromptLearner_caption(cfg, classnames, clip_model)
         self.image_encoder = clip_model.visual
+        self.text_encoder = TextEncoder(clip_model)
         self.logit_scale = torch.tensor(4.60517)
         self.dtype = clip_model.dtype
         self.backbone = cfg.MODEL.BACKBONE.NAME
-        self.clip_model = clip_model
+
+        self.se = se_layer(clip_model.visual.output_dim*2, reduction=16)
+
+        self.cls_head = ClsHead_cat_lscale(classnames, clip_model, self.logit_scale)
+        self.wiseft_head = ClsHead_cat_lscale(classnames, clip_model, self.logit_scale)
+        self.wiseft_head2 = ClsHead_cat_lscale(classnames, clip_model, self.logit_scale)
 
         # shared weights and frozen it
         self.prompt_learner.vocab_head.weight.data = clip_model.token_embedding.weight.data.clone()
 
+        self.text_templates = get_templates(cfg.DATASET.NAME, cfg.INPUT.TEXT_AUG)
+        self.zs_weights = self.get_zero_shot_weights(classnames, clip_model).to(device)    # check if require grad: false
+        self.cls_head.fc.weight.data = self.zs_weights.clone()
+
+    def get_zero_shot_weights(self, classnames, clip_model, device="cuda"):
+        num_classes = len(classnames)
+        self.text_encoder.to(device)
+        with torch.no_grad():
+            weights = torch.empty_like(self.cls_head.fc.weight.data)
+            for label in range(num_classes):
+                text_prompts = [template.format(classnames[label]) for template in self.text_templates]
+                text_tokenized = clip.tokenize(text_prompts)
+                text_embedding = clip_model.token_embedding(text_tokenized).type(self.dtype)
+                text_embedding = text_embedding.to(device)
+
+                text_features = self.text_encoder(text_embedding, text_tokenized)
+                text_features = text_features.mean(dim=0)  # average across all templates
+                text_features = torch.cat([text_features, text_features])
+                weights[label] = text_features
+            weights.data = F.normalize(weights, dim=1)
+        return weights
+
     def forward(self, image, target=None, caption=None):  # image: [B,3,224,224]  label:[B]
+        tokenized_prompts_category = self.prompt_learner.tokenized_query_category  # [1, 77]
+        tokenized_prompts_instance = self.prompt_learner.tokenized_query_instance  # [1, 77]
+        logit_scale = self.logit_scale.exp()  # [B]
+
         image_features, image_cls = self.image_encoder(image.type(self.dtype))
         # rn50: [B,2048,7,7]
         if self.backbone.startswith('RN'):
@@ -443,11 +390,27 @@ class CustomCLIP_caption_lora_stage1(nn.Module):
 
         prompts_category, prompts_instance, loss_category, loss_instance = self.prompt_learner(image_features, image_cls, target, caption)  # [B, 77, 1024]
 
-        return loss_category, loss_instance
+        text_features_category = self.text_encoder(prompts_category, tokenized_prompts_category)   # [B,1024]
+        text_features_instance = self.text_encoder(prompts_instance, tokenized_prompts_instance)  # [B,1024]
+        # text_features = text_features / text_features.norm(dim=-1, keepdim=True)
+        text_features_category, text_features_instance = text_features_category.float(), text_features_instance.float()
+        image_cls = image_cls.float()
+
+        # NOTE ensemble over embedding space
+        text_features = (text_features_category + text_features_instance) / 2.
+
+        fused_fea = torch.cat([image_cls, text_features], dim=1)
+        fused_fea = self.se(fused_fea)
+        logits = self.cls_head(fused_fea)
+        if not self.prompt_learner.training:
+            logits_wiseft = self.wiseft_head(fused_fea)
+            logits_wiseft2 = self.wiseft_head2(fused_fea)
+            return logits, logits_wiseft, logits_wiseft2
+
+        return logits, loss_category, loss_instance
 
 
-# === 一阶段：扔掉text encoder和fc，只训bonder；  二阶段：加入lora和fc ===
-class Baseline_caption_wiseft_lora_twostage_stage1(BaseModel):
+class Baseline_caption_wiseft_se_post(BaseModel):
     def __init__(self, cfg, classnames=None):
         super().__init__()
         self.logger = logging.getLogger(cfg.TRAINER.NAME)
@@ -459,70 +422,22 @@ class Baseline_caption_wiseft_lora_twostage_stage1(BaseModel):
         clip_model = load_clip_to_cpu(cfg)
 
         if cfg.TRAINER.PREC == "fp32" or cfg.TRAINER.PREC == "amp":
+            # CLIP's default precision is fp16
             clip_model.float()
 
         for param in clip_model.parameters():
             param.requires_grad = False
 
-        self.logger.info("Building Baseline_caption_wiseft_lora_twostage_stage1")
-        self.model = CustomCLIP_caption_lora_stage1(cfg, classnames, clip_model)
+        self.logger.info("Building Baseline_caption_wiseft_se_post")
+        self.model = CustomCLIP_caption_se_post(cfg, classnames, clip_model)
 
         self.logger.info("Turning off gradients in both the image and the text encoder")
-        name_to_update = ["prompt_learner"]
+        name_to_update = ["prompt_learner", "cls_head", "se"]
 
         for name, param in self.model.named_parameters():
-            if name_to_update[0] in name:
+            if (name_to_update[0] in name) or (name_to_update[1] in name) or (name_to_update[2] in name):
                 param.requires_grad_(True)
-
-        # Fix the weights of vocab head
-        self.model.prompt_learner.vocab_head.weight.requires_grad_(False)
-
-        # Double check
-        enabled = set()
-        for name, param in self.model.named_parameters():
-            if param.requires_grad:
-                enabled.add(name)
-        self.logger.info(f"Parameters to be updated: {enabled}")
-
-        self.optim = build_optimizer(self.model.prompt_learner, cfg.OPTIM)
-        self.sched = build_scheduler_iter(self.optim, cfg.OPTIM)
-
-        self.register_model("prompt_learner", self.model.prompt_learner, self.optim, self.sched)
-
-    def check_cfg(self, cfg):
-        assert cfg.TRAINER.PREC in ["fp16", "fp32", "amp"]
-
-    def forward(self, image, label=None, caption=None):
-        return self.model(image, label, caption)     # logits
-
-
-class Baseline_caption_wiseft_lora_twostage_stage2(BaseModel):
-    def __init__(self, cfg, classnames=None):
-        super().__init__()
-        self.logger = logging.getLogger(cfg.TRAINER.NAME)
-        self.check_cfg(cfg)
-        self.cfg = cfg
-        self.test_freq = cfg.TRAIN.TEST_FREQ
-
-        self.logger.info(f"Loading CLIP (backbone: {cfg.MODEL.BACKBONE.NAME})")
-        clip_model = load_clip_to_cpu(cfg)
-
-        if cfg.TRAINER.PREC == "fp32" or cfg.TRAINER.PREC == "amp":
-            clip_model.float()
-
-        # for param in clip_model.parameters():
-        #     param.requires_grad = False
-
-        self.logger.info("Building Baseline_caption_wiseft_lora_twostage_stage1")
-        self.model = CustomCLIP_caption_lora(cfg, classnames, clip_model)
-
-        self.logger.info("Turning off gradients in both the image and the text encoder")
-        name_to_update = ["prompt_learner", "cls_head"]
-
-        for name, param in self.model.named_parameters():
-            if (name_to_update[0] in name) or (name_to_update[1] in name):
-                param.requires_grad_(True)
-            elif "lora_" not in name:
+            else:
                 param.requires_grad_(False)
 
         # Fix the weights of vocab head
@@ -535,22 +450,12 @@ class Baseline_caption_wiseft_lora_twostage_stage2(BaseModel):
                 enabled.add(name)
         self.logger.info(f"Parameters to be updated: {enabled}")
 
-        self.optim_bonder = build_optimizer(self.model.prompt_learner, cfg.OPTIM)
-        self.sched_bonder = build_scheduler_iter(self.optim_bonder, cfg.OPTIM)
+        self.optim = build_optimizer([self.model.prompt_learner, self.model.cls_head], cfg.OPTIM)
+        self.sched = build_scheduler_iter(self.optim, cfg.OPTIM)
 
-        self.optim_fc = build_optimizer(self.model.cls_head, cfg.OPTIM)
-        self.sched_fc = build_scheduler_iter(self.optim_fc, cfg.OPTIM)
-
-        params = []
-        for n, p in self.model.clip_model.named_parameters():
-            if p.requires_grad:
-                params.append(p)
-        self.optim_lora = build_optimizer(params, cfg.OPTIM, is_params=True, is_split=False)
-        self.sched_lora = build_scheduler_iter(self.optim_lora, cfg.OPTIM)
-
-        self.register_model("prompt_learner", self.model.prompt_learner, self.optim_bonder, self.sched_bonder)
-        self.register_model("cls_head", self.model.cls_head, self.optim_fc, self.sched_fc)
-        self.register_model("clip_model", self.model.clip_model, self.optim_lora, self.sched_lora)
+        self.register_model("prompt_learner", self.model.prompt_learner, self.optim, self.sched)
+        self.register_model("cls_head", self.model.cls_head)
+        self.register_model("se", self.model.se)
 
     def check_cfg(self, cfg):
         assert cfg.TRAINER.PREC in ["fp16", "fp32", "amp"]

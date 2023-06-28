@@ -577,3 +577,53 @@ CUDA_VISIBLE_DEVICES=3 python train_wandb_iter_val.py \
 --dataset-config-file /home/tanhao/Baseline/configs/datasets/imagenet_wval.yaml \
 --config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_b16_multi_stream.yaml \
 DATASET.NUM_SHOTS 16
+
+
+# ============ test seed and average =============
+CUDA_VISIBLE_DEVICES=2 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_b16_multi_stream.yaml \
+DATASET.NUM_SHOTS 16 SIMPLE_SEED True OPTIM.MAX_ITER 600
+
+CUDA_VISIBLE_DEVICES=6 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/stanford_cars.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_b16_multi_stream.yaml \
+DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 600
+
+CUDA_VISIBLE_DEVICES=6 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/stanford_cars.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_b16_multi_stream.yaml \
+DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 600
+
+
+# ============ test only save lora params =============
+CUDA_VISIBLE_DEVICES=2 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/caltech101.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
+DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 600
+
+# =========== test se layer ================
+CUDA_VISIBLE_DEVICES=2 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_b16_se_pre_all.yaml \
+DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 600
+
+CUDA_VISIBLE_DEVICES=2 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_b16_se_post.yaml \
+DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 600
+
+
+
+# se layer
+# onegpu.sh
+
+DATASET=$1
+SHOTS=$2
+ITER=$3
+LR=$4
+
+CUDA_VISIBLE_DEVICES=0 WANDB_API_KEY=2a0ff77c64888b3bd539c7873069809fbfeb6059 WANDB_MODE=offline python /home/lijun07/code/CAPT/train_wandb_iter_val.py \
+    --dataset-config-file /home/lijun07/code/CAPT/configs/datasets/${DATASET}.yaml \
+    --config-file /home/lijun07/code/CAPT/configs/trainers/Baseline_caption/vit_b16_se_pre_all.yaml \
+    DATASET.NUM_SHOTS ${SHOTS} OPTIM.MAX_ITER ${ITER} OPTIM.LR ${LR}

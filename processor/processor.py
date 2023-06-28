@@ -11,6 +11,8 @@ from solver import Classification
 
 import time
 import datetime
+import os
+import json
 import logging
 from tqdm import tqdm
 import wandb
@@ -1208,7 +1210,7 @@ def train_sweep_iter_wiseft(cfg, model, data, local_rank):
 
 # def train_wandb_iter_wiseft_val(cfg, model, data, local_rank):
 def train_wandb_iter_wiseft_val(cfg, model, data, image_loader,
-                                val_loader, test_loader, local_rank):
+                                val_loader, test_loader, output_dir, local_rank):
     logger = logging.getLogger(cfg.TRAINER.NAME)
     optimizer = model.optim
     scheduler = model.sched
@@ -1327,7 +1329,7 @@ def train_wandb_iter_wiseft_val(cfg, model, data, image_loader,
                            })
 
         # 2.meet epoch: save checkpoint
-        sdir = cfg.OUTPUT_DIR
+        sdir = output_dir
         if iters % cfg.TRAIN.SAVE_FREQ == 0:
             if cfg.TRAIN.DIST_TRAIN and dist.get_rank() != 0:
                 pass
@@ -1375,19 +1377,29 @@ def train_wandb_iter_wiseft_val(cfg, model, data, image_loader,
     if cfg.TRAIN.DIST_TRAIN and torch.cuda.device_count() > 1:
         model.module.set_model_mode("test")
         results, results_wiseft, results_wiseft2, test_loss, test_wiseft_loss, test_wiseft_loss2 = test_wiseft_val(cfg, model, test_loader, ratio)
+        model.module.set_model_mode("train")
     else:
         model.set_model_mode("test")
         results, results_wiseft, results_wiseft2, test_loss, test_wiseft_loss, test_wiseft_loss2 = test_wiseft_val(cfg, model, test_loader, ratio)
+        model.set_model_mode("train")
 
-    wandb.log({'test acc': results["accuracy"],
-               f'test acc (wiseft_{ratio})': results_wiseft["accuracy"],
-               'test acc (wiseft_1.0)': results_wiseft2["accuracy"],
-               'test loss': test_loss,
-               f'test loss (wiseft_{ratio})': test_wiseft_loss,
-               'test loss (wiseft_1.0)': test_wiseft_loss2})
+    test_results = {
+        'test acc': results["accuracy"],
+        f'test acc (wiseft_{ratio})': results_wiseft["accuracy"],
+        'test acc (wiseft_1.0)': results_wiseft2["accuracy"],
+        'test loss': test_loss,
+        f'test loss (wiseft_{ratio})': test_wiseft_loss,
+        'test loss (wiseft_1.0)': test_wiseft_loss2
+    }
+    wandb.log(test_results)
+
+    # save the test results
+    test_path = os.path.join(output_dir, "test.json")
+    with open(test_path, 'w') as f:
+        json.dump(test_results, f)
 
     # save the best model
-    sdir = cfg.OUTPUT_DIR
+    sdir = output_dir
     model.save_model(0, sdir, is_best=True)
 
 
@@ -1486,7 +1498,7 @@ def test_wiseft_val(cfg, model, test_loader, ratio=0.5):
 
 
 # train_wandb_iter_wiseft_val
-def train_caption(cfg, model, data, image_loader, val_loader, test_loader, local_rank):
+def train_caption(cfg, model, data, image_loader, val_loader, test_loader, output_dir, local_rank):
     logger = logging.getLogger(cfg.TRAINER.NAME)
     optimizer = model.optim
     scheduler = model.sched
@@ -1617,7 +1629,7 @@ def train_caption(cfg, model, data, image_loader, val_loader, test_loader, local
                        })
 
         # 2.meet epoch: save checkpoint
-        sdir = cfg.OUTPUT_DIR
+        sdir = output_dir
         if iters % cfg.TRAIN.SAVE_FREQ == 0:
             if cfg.TRAIN.DIST_TRAIN and dist.get_rank() != 0:
                 pass
@@ -1677,20 +1689,66 @@ def train_caption(cfg, model, data, image_loader, val_loader, test_loader, local
     if cfg.TRAIN.DIST_TRAIN and torch.cuda.device_count() > 1:
         model.module.set_model_mode("test")
         results, results_wiseft, results_wiseft2, test_loss, test_wiseft_loss, test_wiseft_loss2 = test_wiseft_val(cfg, model, test_loader, ratio)
+        model.module.set_model_mode("train")
     else:
         model.set_model_mode("test")
         results, results_wiseft, results_wiseft2, test_loss, test_wiseft_loss, test_wiseft_loss2 = test_wiseft_val(cfg, model, test_loader, ratio)
+        model.set_model_mode("train")
 
-    wandb.log({'test acc': results["accuracy"],
-               f'test acc (wiseft_{ratio})': results_wiseft["accuracy"],
-               'test acc (wiseft_1.0)': results_wiseft2["accuracy"],
-               'test loss': test_loss,
-               f'test loss (wiseft_{ratio})': test_wiseft_loss,
-               'test loss (wiseft_1.0)': test_wiseft_loss2})
+    test_results = {
+         'test acc': results["accuracy"],
+         f'test acc (wiseft_{ratio})': results_wiseft["accuracy"],
+         'test acc (wiseft_1.0)': results_wiseft2["accuracy"],
+         'test loss': test_loss,
+         f'test loss (wiseft_{ratio})': test_wiseft_loss,
+         'test loss (wiseft_1.0)': test_wiseft_loss2
+    }
+    wandb.log(test_results)
 
-    # save the best model
-    # sdir = cfg.OUTPUT_DIR
+    # save the test results
+    test_path = os.path.join(output_dir, "test.json")
+    with open(test_path, 'w') as f:
+        json.dump(test_results, f)
+
+    # # save the best model
+    # sdir = output_dir
     # model.save_model(0, sdir, is_best=True)
+
+def inference(cfg, model, data, image_loader, val_loader, test_loader, output_dir, local_rank):
+    logger = logging.getLogger(cfg.TRAINER.NAME)
+
+    if device:
+        model.to(local_rank)
+        if cfg.TRAIN.DIST_TRAIN and torch.cuda.device_count() > 1:
+            logger.info("Using {} GPUs for training".format(torch.cuda.device_count()))
+            # model, optimizer = amp.initialize(model, optimizer, opt_level="O1")
+            model = nn.SyncBatchNorm.convert_sync_batchnorm(model)
+            model = nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], find_unused_parameters=True)
+
+    ratio = 0.5
+    if cfg.TRAIN.DIST_TRAIN and torch.cuda.device_count() > 1:
+        model.module.set_model_mode("test")
+        results, results_wiseft, results_wiseft2, test_loss, test_wiseft_loss, test_wiseft_loss2 = test_wiseft_val(cfg, model, test_loader, ratio)
+        model.module.set_model_mode("train")
+    else:
+        model.set_model_mode("test")
+        results, results_wiseft, results_wiseft2, test_loss, test_wiseft_loss, test_wiseft_loss2 = test_wiseft_val(cfg, model, test_loader, ratio)
+        model.set_model_mode("train")
+
+    test_results = {
+        'test acc': results["accuracy"],
+        f'test acc (wiseft_{ratio})': results_wiseft["accuracy"],
+        'test acc (wiseft_1.0)': results_wiseft2["accuracy"],
+        'test loss': test_loss,
+        f'test loss (wiseft_{ratio})': test_wiseft_loss,
+        'test loss (wiseft_1.0)': test_wiseft_loss2
+    }
+    wandb.log(test_results)
+
+    # save the test results
+    test_path = os.path.join(output_dir, "test.json")
+    with open(test_path, 'w') as f:
+        json.dump(test_results, f)
 
 
 def parse_batch_caption(batch):
@@ -1705,7 +1763,7 @@ def parse_batch_caption(batch):
 
 # train_wandb_iter_wiseft_val_two_stage
 def train_wandb_iter_wiseft_val_fixedfirst(cfg, model, data, image_loader,
-                                val_loader, test_loader, local_rank):
+                                val_loader, test_loader, output_dir, local_rank):
     logger = logging.getLogger(cfg.TRAINER.NAME)
     optimizer_bonder = model.optim_bonder
     scheduler_bonder = model.sched_bonder
@@ -1826,7 +1884,7 @@ def train_wandb_iter_wiseft_val_fixedfirst(cfg, model, data, image_loader,
                        })
 
         # 2.meet epoch: save checkpoint
-        sdir = cfg.OUTPUT_DIR
+        sdir = output_dir
         if iters % cfg.TRAIN.SAVE_FREQ == 0:
             if cfg.TRAIN.DIST_TRAIN and dist.get_rank() != 0:
                 pass
@@ -1877,17 +1935,27 @@ def train_wandb_iter_wiseft_val_fixedfirst(cfg, model, data, image_loader,
     if cfg.TRAIN.DIST_TRAIN and torch.cuda.device_count() > 1:
         model.module.set_model_mode("test")
         results, results_wiseft, results_wiseft2, test_loss, test_wiseft_loss, test_wiseft_loss2 = test_wiseft_val(cfg, model, test_loader, ratio)
+        model.module.set_model_mode("train")
     else:
         model.set_model_mode("test")
         results, results_wiseft, results_wiseft2, test_loss, test_wiseft_loss, test_wiseft_loss2 = test_wiseft_val(cfg, model, test_loader, ratio)
+        model.set_model_mode("train")
 
-    wandb.log({'test acc': results["accuracy"],
-               f'test acc (wiseft_{ratio})': results_wiseft["accuracy"],
-               'test acc (wiseft_1.0)': results_wiseft2["accuracy"],
-               'test loss': test_loss,
-               f'test loss (wiseft_{ratio})': test_wiseft_loss,
-               'test loss (wiseft_1.0)': test_wiseft_loss2})
+    test_results = {
+        'test acc': results["accuracy"],
+        f'test acc (wiseft_{ratio})': results_wiseft["accuracy"],
+        'test acc (wiseft_1.0)': results_wiseft2["accuracy"],
+        'test loss': test_loss,
+        f'test loss (wiseft_{ratio})': test_wiseft_loss,
+        'test loss (wiseft_1.0)': test_wiseft_loss2
+    }
+    wandb.log(test_results)
+
+    # save the test results
+    test_path = os.path.join(output_dir, "test.json")
+    with open(test_path, 'w') as f:
+        json.dump(test_results, f)
 
     # save the best model
-    # sdir = cfg.OUTPUT_DIR
-    # model.save_model(0, sdir, is_best=True)
+    sdir = output_dir
+    model.save_model(0, sdir, is_best=True)
