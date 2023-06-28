@@ -1,3 +1,4 @@
+
 bash /home/lijun07/code/CAPT/scripts/baseline/train2.sh sun397 16 & \
 
 bash /home/lijun07/code/CAPT/scripts/baseline/train2.sh sun397 8 & \
