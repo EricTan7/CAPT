@@ -99,7 +99,7 @@ def main(args):
                                   f"lr{cfg.OPTIM.LR}_iter{cfg.OPTIM.MAX_ITER}", f"seed{seed}")
         logger = setup_logger(cfg.TRAINER.NAME, output_dir, if_train=True)
 
-        run = wandb.init(project=args.wandb_proj, config=cfg, tags=["caption_se_pre_all"])
+        run = wandb.init(project=args.wandb_proj, config=cfg, tags=["caption_se_post"])
 
         run.name = f'{cfg.MODEL.BACKBONE.NAME}-{cfg.DATASET.NAME}-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-r{cfg.MODEL.LORA.RANK}' \
             f'-a{cfg.MODEL.LORA.ALPHA}-{cfg.MODEL.TEXT.ENCODER}-{cfg.INPUT.TEXT_AUG}' \
