@@ -450,7 +450,7 @@ class Baseline_caption_wiseft_se_post(BaseModel):
                 enabled.add(name)
         self.logger.info(f"Parameters to be updated: {enabled}")
 
-        self.optim = build_optimizer([self.model.prompt_learner, self.model.cls_head], cfg.OPTIM)
+        self.optim = build_optimizer([self.model.prompt_learner, self.model.cls_head, self.model.se], cfg.OPTIM)
         self.sched = build_scheduler_iter(self.optim, cfg.OPTIM)
 
         self.register_model("prompt_learner", self.model.prompt_learner, self.optim, self.sched)
