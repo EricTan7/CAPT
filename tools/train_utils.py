@@ -18,7 +18,8 @@ from models import Baseline, lpclip, Baseline_cattn, Baseline_cattn_vocabloss, \
     Baseline_abla_caption_only, Baseline_abla_multi_wo_caption, Baseline_caption_wiseft_nxcattn, Baseline_caption_wiseft_nxcattn_add, \
     Baseline_caption_wiseft_nxcattn_auxi, Baseline_caption_wiseft_multi_stream_projector, Baseline_caption_wiseft_multi_stream_bert, \
     Baseline_caption_wiseft_multi_stream_t5, Baseline_caption_wiseft_multi_stream_rn, Baseline_caption_wiseft_lora, \
-    Baseline_caption_wiseft_lora_fixedfirst, Baseline_caption_wiseft_se_pre_all, Baseline_caption_wiseft_se_post
+    Baseline_caption_wiseft_lora_fixedfirst, Baseline_caption_wiseft_se_pre_all, Baseline_caption_wiseft_se_post, \
+    Baseline_caption_wiseft_se_cross
 from configs import get_cfg_default
 import logging
 
@@ -71,7 +72,8 @@ MODELS = {
     'baseline_caption_wiseft_lora': Baseline_caption_wiseft_lora,
     'baseline_caption_wiseft_lora_fixedfirst': Baseline_caption_wiseft_lora_fixedfirst,
     'baseline_caption_wiseft_se_pre_all': Baseline_caption_wiseft_se_pre_all,
-    'baseline_caption_wiseft_se_post': Baseline_caption_wiseft_se_post
+    'baseline_caption_wiseft_se_post': Baseline_caption_wiseft_se_post,
+    'baseline_caption_wiseft_se_cross': Baseline_caption_wiseft_se_cross
 }
 
 

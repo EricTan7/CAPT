@@ -627,3 +627,16 @@ CUDA_VISIBLE_DEVICES=0 WANDB_API_KEY=2a0ff77c64888b3bd539c7873069809fbfeb6059 WA
     --dataset-config-file /home/lijun07/code/CAPT/configs/datasets/${DATASET}.yaml \
     --config-file /home/lijun07/code/CAPT/configs/trainers/Baseline_caption/vit_b16_se_pre_all.yaml \
     DATASET.NUM_SHOTS ${SHOTS} OPTIM.MAX_ITER ${ITER} OPTIM.LR ${LR}
+
+
+# =============== se_pre_all ===================
+CUDA_VISIBLE_DEVICES=1 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_b16_se_pre_all.yaml \
+DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 19200 OPTIM.LR 5e-5
+
+# =============== se_cross =====================
+CUDA_VISIBLE_DEVICES=2 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_b16_se_cross.yaml \
+DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 19200 OPTIM.LR 5e-5
