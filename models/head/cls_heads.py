@@ -366,3 +366,27 @@ class se_layer(nn.Module):
 
     def forward(self, x):  # [B,1024]
         return self.se(x) * x
+
+
+class cross_se_layer(nn.Module):
+    def __init__(self, dim, reduction=16):
+        super().__init__()
+
+        self.se_img = nn.Sequential(
+            nn.Linear(dim, dim // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(dim // reduction, dim, bias=False),
+            nn.Sigmoid()
+        )
+        self.se_text = nn.Sequential(
+            nn.Linear(dim, dim // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(dim // reduction, dim, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, img, text):  # [B,1024]
+        # return self.se(x) * x
+        img = self.se_img(text) * img
+        text = self.se_text(img) * text
+        return img, text
