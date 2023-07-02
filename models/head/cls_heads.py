@@ -390,3 +390,19 @@ class cross_se_layer(nn.Module):
         img = self.se_img(text) * img
         text = self.se_text(img) * text
         return img, text
+
+
+class cross_text_se_layer(nn.Module):
+    def __init__(self, dim, reduction=16):
+        super().__init__()
+
+        self.se = nn.Sequential(
+            nn.Linear(dim, dim // reduction, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(dim // reduction, dim, bias=False),
+            nn.Sigmoid()
+        )
+
+    def forward(self, img, text):  # [B,1024]
+        text = self.se(img) * text
+        return text
