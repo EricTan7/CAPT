@@ -591,3 +591,269 @@ class Baseline_caption_wiseft_se_cross(BaseModel):
 
     def forward(self, image, label=None, caption=None):
         return self.model(image, label, caption)     # logits
+
+
+class CustomCLIP_caption_se_text(nn.Module):
+    def __init__(self, cfg, classnames, clip_model):
+        super().__init__()
+        device = 'cuda'
+        self.prompt_learner = PromptLearner_caption(cfg, classnames, clip_model)
+        self.image_encoder = clip_model.visual
+        self.text_encoder = TextEncoder(clip_model)
+        self.logit_scale = torch.tensor(4.60517)
+        self.dtype = clip_model.dtype
+        self.backbone = cfg.MODEL.BACKBONE.NAME
+
+        self.se = se_layer(clip_model.visual.output_dim, reduction=16)
+
+        self.cls_head = ClsHead_cat_lscale(classnames, clip_model, self.logit_scale)
+        self.wiseft_head = ClsHead_cat_lscale(classnames, clip_model, self.logit_scale)
+        self.wiseft_head2 = ClsHead_cat_lscale(classnames, clip_model, self.logit_scale)
+        # self.cls_head = ClsHead_mul_lscale(classnames, clip_model, self.logit_scale)
+        # self.wiseft_head = ClsHead_mul_lscale(classnames, clip_model, self.logit_scale)
+        # self.wiseft_head2 = ClsHead_mul_lscale(classnames, clip_model, self.logit_scale)
+
+        # shared weights and frozen it
+        self.prompt_learner.vocab_head.weight.data = clip_model.token_embedding.weight.data.clone()
+
+        self.text_templates = get_templates(cfg.DATASET.NAME, cfg.INPUT.TEXT_AUG)
+        self.zs_weights = self.get_zero_shot_weights(classnames, clip_model).to(device)
+        self.cls_head.fc.weight.data = self.zs_weights.clone()
+
+    def get_zero_shot_weights(self, classnames, clip_model, device="cuda"):
+        num_classes = len(classnames)
+        self.text_encoder.to(device)
+        with torch.no_grad():
+            weights = torch.empty_like(self.cls_head.fc.weight.data)
+            for label in range(num_classes):
+                text_prompts = [template.format(classnames[label]) for template in self.text_templates]
+                text_tokenized = clip.tokenize(text_prompts)
+                text_embedding = clip_model.token_embedding(text_tokenized).type(self.dtype)
+                text_embedding = text_embedding.to(device)
+
+                text_features = self.text_encoder(text_embedding, text_tokenized)
+                text_features = text_features.mean(dim=0)  # average across all templates
+                text_features = torch.cat([text_features, text_features])
+                weights[label] = text_features
+            weights.data = F.normalize(weights, dim=1)
+        return weights
+
+    def forward(self, image, target=None, caption=None):  # image: [B,3,224,224]  label:[B]
+        tokenized_prompts_category = self.prompt_learner.tokenized_query_category  # [1, 77]
+        tokenized_prompts_instance = self.prompt_learner.tokenized_query_instance  # [1, 77]
+        logit_scale = self.logit_scale.exp()  # [B]
+
+        image_features, image_cls = self.image_encoder(image.type(self.dtype))
+        # rn50: [B,2048,7,7]
+        if self.backbone.startswith('RN'):
+            image_features = image_features.view(image_features.size(0), image_features.size(1), -1).permute(0,2,1)     # [B,49,2048]
+        # vitb16: [B,197,512]
+
+        prompts_category, prompts_instance, loss_category, loss_instance = self.prompt_learner(image_features, image_cls, target, caption)  # [B, 77, 1024]
+
+        text_features_category = self.text_encoder(prompts_category, tokenized_prompts_category)   # [B,1024]
+        text_features_instance = self.text_encoder(prompts_instance, tokenized_prompts_instance)  # [B,1024]
+        # text_features = text_features / text_features.norm(dim=-1, keepdim=True)
+        text_features_category, text_features_instance = text_features_category.float(), text_features_instance.float()
+        image_cls = image_cls.float()
+
+        # NOTE ensemble over embedding space
+        text_features = (text_features_category + text_features_instance) / 2.
+
+        text_features = self.se(text_features)
+        fused_fea = torch.cat([image_cls, text_features], dim=1)
+        # fused_fea = image_cls * text_features
+        logits = self.cls_head(fused_fea)
+        if not self.prompt_learner.training:
+            logits_wiseft = self.wiseft_head(fused_fea)
+            logits_wiseft2 = self.wiseft_head2(fused_fea)
+            return logits, logits_wiseft, logits_wiseft2
+
+        return logits, loss_category, loss_instance
+
+
+class Baseline_caption_wiseft_se_text(BaseModel):
+    def __init__(self, cfg, classnames=None):
+        super().__init__()
+        self.logger = logging.getLogger(cfg.TRAINER.NAME)
+        self.check_cfg(cfg)
+        self.cfg = cfg
+        self.test_freq = cfg.TRAIN.TEST_FREQ
+
+        self.logger.info(f"Loading CLIP (backbone: {cfg.MODEL.BACKBONE.NAME})")
+        clip_model = load_clip_to_cpu(cfg)
+
+        if cfg.TRAINER.PREC == "fp32" or cfg.TRAINER.PREC == "amp":
+            # CLIP's default precision is fp16
+            clip_model.float()
+
+        for param in clip_model.parameters():
+            param.requires_grad = False
+
+        self.logger.info("Building Baseline_caption_wiseft_se_text")
+        self.model = CustomCLIP_caption_se_text(cfg, classnames, clip_model)
+
+        self.logger.info("Turning off gradients in both the image and the text encoder")
+        name_to_update = ["prompt_learner", "cls_head", "se"]
+
+        for name, param in self.model.named_parameters():
+            if (name_to_update[0] in name) or (name_to_update[1] in name) or (name_to_update[2] in name):
+                param.requires_grad_(True)
+            else:
+                param.requires_grad_(False)
+
+        # Fix the weights of vocab head
+        self.model.prompt_learner.vocab_head.weight.requires_grad_(False)
+
+        # Double check
+        enabled = set()
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                enabled.add(name)
+        self.logger.info(f"Parameters to be updated: {enabled}")
+
+        self.optim = build_optimizer([self.model.prompt_learner, self.model.cls_head, self.model.se], cfg.OPTIM)
+        self.sched = build_scheduler_iter(self.optim, cfg.OPTIM)
+
+        self.register_model("prompt_learner", self.model.prompt_learner, self.optim, self.sched)
+        self.register_model("cls_head", self.model.cls_head)
+        self.register_model("se", self.model.se)
+
+    def check_cfg(self, cfg):
+        assert cfg.TRAINER.PREC in ["fp16", "fp32", "amp"]
+
+    def forward(self, image, label=None, caption=None):
+        return self.model(image, label, caption)     # logits
+
+
+class CustomCLIP_caption_se_text_cross(nn.Module):
+    def __init__(self, cfg, classnames, clip_model):
+        super().__init__()
+        device = 'cuda'
+        self.prompt_learner = PromptLearner_caption(cfg, classnames, clip_model)
+        self.image_encoder = clip_model.visual
+        self.text_encoder = TextEncoder(clip_model)
+        self.logit_scale = torch.tensor(4.60517)
+        self.dtype = clip_model.dtype
+        self.backbone = cfg.MODEL.BACKBONE.NAME
+
+        self.se = cross_text_se_layer(clip_model.visual.output_dim, reduction=16)
+
+        self.cls_head = ClsHead_cat_lscale(classnames, clip_model, self.logit_scale)
+        self.wiseft_head = ClsHead_cat_lscale(classnames, clip_model, self.logit_scale)
+        self.wiseft_head2 = ClsHead_cat_lscale(classnames, clip_model, self.logit_scale)
+        # self.cls_head = ClsHead_mul_lscale(classnames, clip_model, self.logit_scale)
+        # self.wiseft_head = ClsHead_mul_lscale(classnames, clip_model, self.logit_scale)
+        # self.wiseft_head2 = ClsHead_mul_lscale(classnames, clip_model, self.logit_scale)
+
+        # shared weights and frozen it
+        self.prompt_learner.vocab_head.weight.data = clip_model.token_embedding.weight.data.clone()
+
+        self.text_templates = get_templates(cfg.DATASET.NAME, cfg.INPUT.TEXT_AUG)
+        self.zs_weights = self.get_zero_shot_weights(classnames, clip_model).to(device)
+        self.cls_head.fc.weight.data = self.zs_weights.clone()
+
+    def get_zero_shot_weights(self, classnames, clip_model, device="cuda"):
+        num_classes = len(classnames)
+        self.text_encoder.to(device)
+        with torch.no_grad():
+            weights = torch.empty_like(self.cls_head.fc.weight.data)
+            for label in range(num_classes):
+                text_prompts = [template.format(classnames[label]) for template in self.text_templates]
+                text_tokenized = clip.tokenize(text_prompts)
+                text_embedding = clip_model.token_embedding(text_tokenized).type(self.dtype)
+                text_embedding = text_embedding.to(device)
+
+                text_features = self.text_encoder(text_embedding, text_tokenized)
+                text_features = text_features.mean(dim=0)  # average across all templates
+                text_features = torch.cat([text_features, text_features])
+                weights[label] = text_features
+            weights.data = F.normalize(weights, dim=1)
+        return weights
+
+    def forward(self, image, target=None, caption=None):  # image: [B,3,224,224]  label:[B]
+        tokenized_prompts_category = self.prompt_learner.tokenized_query_category  # [1, 77]
+        tokenized_prompts_instance = self.prompt_learner.tokenized_query_instance  # [1, 77]
+        logit_scale = self.logit_scale.exp()  # [B]
+
+        image_features, image_cls = self.image_encoder(image.type(self.dtype))
+        # rn50: [B,2048,7,7]
+        if self.backbone.startswith('RN'):
+            image_features = image_features.view(image_features.size(0), image_features.size(1), -1).permute(0,2,1)     # [B,49,2048]
+        # vitb16: [B,197,512]
+
+        prompts_category, prompts_instance, loss_category, loss_instance = self.prompt_learner(image_features, image_cls, target, caption)  # [B, 77, 1024]
+
+        text_features_category = self.text_encoder(prompts_category, tokenized_prompts_category)   # [B,1024]
+        text_features_instance = self.text_encoder(prompts_instance, tokenized_prompts_instance)  # [B,1024]
+        # text_features = text_features / text_features.norm(dim=-1, keepdim=True)
+        text_features_category, text_features_instance = text_features_category.float(), text_features_instance.float()
+        image_cls = image_cls.float()
+
+        # NOTE ensemble over embedding space
+        text_features = (text_features_category + text_features_instance) / 2.
+
+        text_features = self.se(image_cls, text_features)
+        fused_fea = torch.cat([image_cls, text_features], dim=1)
+        # fused_fea = image_cls * text_features
+        logits = self.cls_head(fused_fea)
+        if not self.prompt_learner.training:
+            logits_wiseft = self.wiseft_head(fused_fea)
+            logits_wiseft2 = self.wiseft_head2(fused_fea)
+            return logits, logits_wiseft, logits_wiseft2
+
+        return logits, loss_category, loss_instance
+
+
+class Baseline_caption_wiseft_se_text_cross(BaseModel):
+    def __init__(self, cfg, classnames=None):
+        super().__init__()
+        self.logger = logging.getLogger(cfg.TRAINER.NAME)
+        self.check_cfg(cfg)
+        self.cfg = cfg
+        self.test_freq = cfg.TRAIN.TEST_FREQ
+
+        self.logger.info(f"Loading CLIP (backbone: {cfg.MODEL.BACKBONE.NAME})")
+        clip_model = load_clip_to_cpu(cfg)
+
+        if cfg.TRAINER.PREC == "fp32" or cfg.TRAINER.PREC == "amp":
+            # CLIP's default precision is fp16
+            clip_model.float()
+
+        for param in clip_model.parameters():
+            param.requires_grad = False
+
+        self.logger.info("Building Baseline_caption_wiseft_se_text_cross")
+        self.model = CustomCLIP_caption_se_text_cross(cfg, classnames, clip_model)
+
+        self.logger.info("Turning off gradients in both the image and the text encoder")
+        name_to_update = ["prompt_learner", "cls_head", "se"]
+
+        for name, param in self.model.named_parameters():
+            if (name_to_update[0] in name) or (name_to_update[1] in name) or (name_to_update[2] in name):
+                param.requires_grad_(True)
+            else:
+                param.requires_grad_(False)
+
+        # Fix the weights of vocab head
+        self.model.prompt_learner.vocab_head.weight.requires_grad_(False)
+
+        # Double check
+        enabled = set()
+        for name, param in self.model.named_parameters():
+            if param.requires_grad:
+                enabled.add(name)
+        self.logger.info(f"Parameters to be updated: {enabled}")
+
+        self.optim = build_optimizer([self.model.prompt_learner, self.model.cls_head, self.model.se], cfg.OPTIM)
+        self.sched = build_scheduler_iter(self.optim, cfg.OPTIM)
+
+        self.register_model("prompt_learner", self.model.prompt_learner, self.optim, self.sched)
+        self.register_model("cls_head", self.model.cls_head)
+        self.register_model("se", self.model.se)
+
+    def check_cfg(self, cfg):
+        assert cfg.TRAINER.PREC in ["fp16", "fp32", "amp"]
+
+    def forward(self, image, label=None, caption=None):
+        return self.model(image, label, caption)     # logits
