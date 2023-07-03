@@ -1,15 +1,19 @@
-for DATA in eurosat
-do
-    for lr in 7e-5 2e-5
-    do
-        for iter in 25600 19200 12800
-        do
-            CUDA_VISIBLE_DEVICES=2 python train_wandb_iter_val.py \
-            --dataset-config-file /home/tanhao/Baseline/configs/datasets/${DATA}.yaml \
-            --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
-            DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 0.4 MODEL.LORA.RANK 2 \
-            SEED 1 DATA_SEED 1 \
-            OPTIM.LR ${lr} OPTIM.MAX_ITER ${iter}
-        done
-    done
-done
+CUDA_VISIBLE_DEVICES=0 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption_abl/vit_b16_wo_textsup.yaml \
+DATASET.NUM_SHOTS 1 OPTIM.MAX_ITER 38400 OPTIM.LR 1e-4 & \
+
+CUDA_VISIBLE_DEVICES=1 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/food101.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption_abl/vit_b16_wo_textsup.yaml \
+DATASET.NUM_SHOTS 1 OPTIM.MAX_ITER 51200 OPTIM.LR 5e-5 & \
+
+CUDA_VISIBLE_DEVICES=2 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/oxford_flowers.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption_abl/vit_b16_wo_textsup.yaml \
+DATASET.NUM_SHOTS 1 OPTIM.MAX_ITER 38400 OPTIM.LR 2e-4 & \
+
+CUDA_VISIBLE_DEVICES=3 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/oxford_pets.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption_abl/vit_b16_wo_textsup.yaml \
+DATASET.NUM_SHOTS 1 OPTIM.MAX_ITER 38400 OPTIM.LR 2e-4 & \
