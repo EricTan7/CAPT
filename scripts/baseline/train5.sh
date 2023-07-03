@@ -1,40 +1,19 @@
-CUDA_VISIBLE_DEVICES=0 WANDB_API_KEY=2a0ff77c64888b3bd539c7873069809fbfeb6059 WANDB_MODE=offline python /home/lijun07/code/CAPT/train_wandb_iter_val.py \
-    --dataset-config-file /home/tanhao/Baseline/configs/datasets/stanford_cars.yaml \
-    --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
-    DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 0.4 MODEL.LORA.RANK 8 \
-    OPTIM.MAX_ITER 12800 OPTIM.LR 5e-5 & \
-CUDA_VISIBLE_DEVICES=1 WANDB_API_KEY=2a0ff77c64888b3bd539c7873069809fbfeb6059 WANDB_MODE=offline python /home/lijun07/code/CAPT/train_wandb_iter_val.py \
-    --dataset-config-file /home/tanhao/Baseline/configs/datasets/stanford_cars.yaml \
-    --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
-    DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 0.6 MODEL.LORA.RANK 8 \
-    OPTIM.MAX_ITER 12800 OPTIM.LR 5e-5 & \
-CUDA_VISIBLE_DEVICES=2 WANDB_API_KEY=2a0ff77c64888b3bd539c7873069809fbfeb6059 WANDB_MODE=offline python /home/lijun07/code/CAPT/train_wandb_iter_val.py \
-    --dataset-config-file /home/tanhao/Baseline/configs/datasets/stanford_cars.yaml \
-    --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
-    DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 1. MODEL.LORA.RANK 8 \
-    OPTIM.MAX_ITER 12800 OPTIM.LR 5e-5 & \
-CUDA_VISIBLE_DEVICES=3 WANDB_API_KEY=2a0ff77c64888b3bd539c7873069809fbfeb6059 WANDB_MODE=offline python /home/lijun07/code/CAPT/train_wandb_iter_val.py \
-    --dataset-config-file /home/tanhao/Baseline/configs/datasets/stanford_cars.yaml \
-    --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
-    DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 2. MODEL.LORA.RANK 8 \
-    OPTIM.MAX_ITER 12800 OPTIM.LR 5e-5 & \
-CUDA_VISIBLE_DEVICES=4 WANDB_API_KEY=2a0ff77c64888b3bd539c7873069809fbfeb6059 WANDB_MODE=offline python /home/lijun07/code/CAPT/train_wandb_iter_val.py \
-    --dataset-config-file /home/tanhao/Baseline/configs/datasets/stanford_cars.yaml \
-    --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
-    DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 0.4 MODEL.LORA.RANK 8 \
-    OPTIM.MAX_ITER 19200 OPTIM.LR 5e-5 & \
-CUDA_VISIBLE_DEVICES=5 WANDB_API_KEY=2a0ff77c64888b3bd539c7873069809fbfeb6059 WANDB_MODE=offline python /home/lijun07/code/CAPT/train_wandb_iter_val.py \
-    --dataset-config-file /home/tanhao/Baseline/configs/datasets/stanford_cars.yaml \
-    --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
-    DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 0.6 MODEL.LORA.RANK 8 \
-    OPTIM.MAX_ITER 19200 OPTIM.LR 5e-5 & \
-CUDA_VISIBLE_DEVICES=6 WANDB_API_KEY=2a0ff77c64888b3bd539c7873069809fbfeb6059 WANDB_MODE=offline python /home/lijun07/code/CAPT/train_wandb_iter_val.py \
-    --dataset-config-file /home/tanhao/Baseline/configs/datasets/stanford_cars.yaml \
-    --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
-    DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 1. MODEL.LORA.RANK 8 \
-    OPTIM.MAX_ITER 19200 OPTIM.LR 5e-5 & \
-CUDA_VISIBLE_DEVICES=7 WANDB_API_KEY=2a0ff77c64888b3bd539c7873069809fbfeb6059 WANDB_MODE=offline python /home/lijun07/code/CAPT/train_wandb_iter_val.py \
-    --dataset-config-file /home/tanhao/Baseline/configs/datasets/stanford_cars.yaml \
-    --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
-    DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA 2. MODEL.LORA.RANK 8 \
-    OPTIM.MAX_ITER 19200 OPTIM.LR 5e-5 & \
+CUDA_VISIBLE_DEVICES=0 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption_abl/vit_b16_wo_textsup.yaml \
+DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 25600 OPTIM.LR 5e-5 & \
+
+CUDA_VISIBLE_DEVICES=1 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/food101.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption_abl/vit_b16_wo_textsup.yaml \
+DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 38400 OPTIM.LR 2e-5 & \
+
+CUDA_VISIBLE_DEVICES=2 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/oxford_flowers.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption_abl/vit_b16_wo_textsup.yaml \
+DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 12800 OPTIM.LR 5e-5 & \
+
+CUDA_VISIBLE_DEVICES=3 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/oxford_pets.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption_abl/vit_b16_wo_textsup.yaml \
+DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 25600 OPTIM.LR 2e-5 & \

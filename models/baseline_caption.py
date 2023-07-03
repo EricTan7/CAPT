@@ -2083,8 +2083,10 @@ class PromptLearner_caption_multi_stream_rn(nn.Module):
 
         num_q_category = 32
         num_q_instance = cfg.MODEL.BONDER.NUM_Q
-        self.bonder_category = CrossAttnBlock_projkv_pe_rn(ctx_dim, num_heads=8, input_size=(num_q_category, ctx_dim), kv_dim=2048)
-        self.bonder_instance = CrossAttnBlock_projkv_pe_rn(ctx_dim, num_heads=8, input_size=(num_q_instance, ctx_dim), kv_dim=2048)
+        # self.bonder_category = CrossAttnBlock_projkv_pe_rn(ctx_dim, num_heads=8, input_size=(num_q_category, ctx_dim), kv_dim=2048)
+        # self.bonder_instance = CrossAttnBlock_projkv_pe_rn(ctx_dim, num_heads=8, input_size=(num_q_instance, ctx_dim), kv_dim=2048)
+        self.bonder_category = CrossAttnBlock(ctx_dim, num_heads=8)
+        self.bonder_instance = CrossAttnBlock(ctx_dim, num_heads=8)
         self.query_category = nn.Parameter(torch.zeros(1, num_q_category, ctx_dim))
         self.query_instance = nn.Parameter(torch.zeros(1, num_q_instance, ctx_dim))
         self.query_category.data.normal_(mean=0.0, std=0.02)
@@ -2193,9 +2195,11 @@ class CustomCLIP_caption_multi_stream_rn(nn.Module):
         self.dtype = clip_model.dtype
         self.backbone = cfg.MODEL.BACKBONE.NAME
 
-        self.cls_head = ClsHead_cat_lscale(classnames, clip_model, self.logit_scale)
-        self.wiseft_head = ClsHead_cat_lscale(classnames, clip_model, self.logit_scale)
-        self.wiseft_head2 = ClsHead_cat_lscale(classnames, clip_model, self.logit_scale)
+        self.cls_head = ClsHead_cat_lscale_dim(classnames, 1024, self.logit_scale)
+        self.wiseft_head = ClsHead_cat_lscale_dim(classnames, 1024, self.logit_scale)
+        self.wiseft_head2 = ClsHead_cat_lscale_dim(classnames, 1024, self.logit_scale)
+
+        self.rn_proj = nn.Linear(2048, 512, bias=False)
 
         # shared weights and frozen it
         self.prompt_learner.vocab_head.weight.data = clip_model.token_embedding.weight.data.clone()
@@ -2231,6 +2235,7 @@ class CustomCLIP_caption_multi_stream_rn(nn.Module):
         # rn50: [B,2048,7,7]
         if self.backbone.startswith('RN'):
             image_features = image_features.view(image_features.size(0), image_features.size(1), -1).permute(0,2,1)     # [B,49,2048]
+            image_features = self.rn_proj(image_features)   # [B, 49, 512]
         # vitb16: [B,197,512]
 
         prompts_category, prompts_instance, loss_category, loss_instance = self.prompt_learner(image_features, image_cls, target, caption)  # [B, 77, 1024]
@@ -2272,14 +2277,14 @@ class Baseline_caption_wiseft_multi_stream_rn(BaseModel):
         for param in clip_model.parameters():
             param.requires_grad = False
 
-        self.logger.info("Building Baseline_caption_wiseft")
+        self.logger.info("Building Baseline_caption_wiseft_multi_stream_rn")
         self.model = CustomCLIP_caption_multi_stream_rn(cfg, classnames, clip_model)
 
         self.logger.info("Turning off gradients in both the image and the text encoder")
-        name_to_update = ["prompt_learner", "cls_head"]
+        name_to_update = ["prompt_learner", "cls_head", "rn_proj"]
 
         for name, param in self.model.named_parameters():
-            if (name_to_update[0] in name) or (name_to_update[1] in name):
+            if (name_to_update[0] in name) or (name_to_update[1] in name) or (name_to_update[2] in name):
                 param.requires_grad_(True)
             else:
                 param.requires_grad_(False)
@@ -2299,6 +2304,7 @@ class Baseline_caption_wiseft_multi_stream_rn(BaseModel):
 
         self.register_model("prompt_learner", self.model.prompt_learner, self.optim, self.sched)
         self.register_model("cls_head", self.model.cls_head)
+        self.register_model("rn_proj", self.model.rn_proj)
 
     def check_cfg(self, cfg):
         assert cfg.TRAINER.PREC in ["fp16", "fp32", "amp"]

@@ -406,3 +406,19 @@ class cross_text_se_layer(nn.Module):
     def forward(self, img, text):  # [B,1024]
         text = self.se(img) * text
         return text
+
+
+class ClsHead_cat_lscale_dim(nn.Module):
+    def __init__(self, classnames, dim, logit_scale, bias=False):
+        super().__init__()
+        n_cls = len(classnames)
+
+        self.fc = nn.Linear(dim*2, n_cls, bias=bias)
+        self.logit_scale = logit_scale
+
+    def forward(self, x):   # [B,1024] [B,1024]
+        x = F.normalize(x, dim=1)
+        x = self.fc(x)
+        x = x * self.logit_scale.exp()
+
+        return x

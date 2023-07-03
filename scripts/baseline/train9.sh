@@ -1,14 +1,9 @@
-for ALPHA in 0.8 1. 2.
-do
-    for RANK in 16
-    do
-        for ITER in 19200 25600 76800
-        do
-            CUDA_VISIBLE_DEVICES=7 python train_wandb_iter_val.py \
-            --dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
-            --config-file /home/tanhao/Baseline/configs/trainers/Baseline_lora/vit_b16.yaml \
-            DATASET.NUM_SHOTS 16 MODEL.LORA.ALPHA ${ALPHA} MODEL.LORA.RANK ${RANK} \
-            SEED 1 DATA_SEED 1 OPTIM.MAX_ITER ${ITER}
-        done
-    done
-done
+CUDA_VISIBLE_DEVICES=0 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/stanford_cars.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption_abl/vit_b16_wo_textsup.yaml \
+DATASET.NUM_SHOTS 1 OPTIM.MAX_ITER 19200 OPTIM.LR 5e-5 & \
+
+CUDA_VISIBLE_DEVICES=1 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/ucf101.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption_abl/vit_b16_wo_textsup.yaml \
+DATASET.NUM_SHOTS 1 OPTIM.MAX_ITER 38400 OPTIM.LR 5e-5 & \
