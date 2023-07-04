@@ -220,21 +220,27 @@
 # '/mnt/sdb/tanhao/recognition/imagenet/images/train/n01440764/n01440764_13679.JPEG'
 
 
-import os
+# import os
+#
+# caption_dic = dict()
+# sample = set()
+# with open("/mnt/sdb/tanhao/recognition/imagenet/captions_p2.txt", 'r') as f:
+#     for line in f.readlines():
+#         line = line.strip('\n').split('\t')
+#         imname = line[0]
+#         caption = line[1]
+#         if imname in sample:
+#             continue
+#         else:
+#             sample.add(imname)
+#             caption_dic[imname] = caption
+#
+# with open("/mnt/sdb/tanhao/recognition/imagenet/captions_p2_new.txt", 'w') as f:
+#     for key,item in caption_dic.items():
+#         f.write(key+'\t'+item+'\n')
 
-caption_dic = dict()
-sample = set()
-with open("/mnt/sdb/tanhao/recognition/imagenet/captions_p2.txt", 'r') as f:
-    for line in f.readlines():
-        line = line.strip('\n').split('\t')
-        imname = line[0]
-        caption = line[1]
-        if imname in sample:
-            continue
-        else:
-            sample.add(imname)
-            caption_dic[imname] = caption
+from clip import clip
+from clip.simple_tokenizer import SimpleTokenizer as _Tokenizer
 
-with open("/mnt/sdb/tanhao/recognition/imagenet/captions_p2_new.txt", 'w') as f:
-    for key,item in caption_dic.items():
-        f.write(key+'\t'+item+'\n')
+clip_model, preprocess = clip.load("ViT-B/16")
+a = 1

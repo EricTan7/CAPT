@@ -1,9 +1,9 @@
-bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh oxford_flowers 16 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh oxford_flowers 16 12800 5e-5 & \
 
-bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh oxford_flowers 8 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh oxford_flowers 8 12800 5e-5 & \
 
-bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh oxford_flowers 4 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh oxford_flowers 4 12800 5e-5 & \
 
-bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh oxford_flowers 2 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh oxford_flowers 2 12800 5e-5 & \
 
-bash /home/lijun07/code/CAPT/scripts/baseline/train1.sh oxford_flowers 1 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh oxford_flowers 1 12800 5e-5 & \
