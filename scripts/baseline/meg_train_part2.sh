@@ -1,9 +1,19 @@
-bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh caltech101 16 38400 2e-5 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh dtd 16 25600 5e-5 & \
 
-bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh caltech101 8 38400 2e-5 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh dtd 8 25600 5e-5 & \
 
-bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh caltech101 4 38400 2e-5 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh dtd 4 25600 5e-5 & \
 
-bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh caltech101 2 38400 2e-5 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh dtd 2 25600 5e-5 & \
 
-bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh caltech101 1 38400 2e-5 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh dtd 1 25600 5e-5 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh fgvc_aircraft 16 25600 5e-5 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh fgvc_aircraft 8 25600 5e-5 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh fgvc_aircraft 4 25600 5e-5 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh fgvc_aircraft 2 25600 5e-5 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh fgvc_aircraft 1 25600 5e-5 & \

@@ -1,9 +1,19 @@
-bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh fgvc_aircraft 16 25600 5e-5 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh food101 16 38400 2e-5 & \
 
-bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh fgvc_aircraft 8 25600 5e-5 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh food101 8 38400 2e-5 & \
 
-bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh fgvc_aircraft 4 25600 5e-5 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh food101 4 38400 2e-5 & \
 
-bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh fgvc_aircraft 2 25600 5e-5 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh food101 2 38400 2e-5 & \
 
-bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh fgvc_aircraft 1 25600 5e-5 & \
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh food101 1 38400 2e-5 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh ucf101 16 38400 5e-5 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh ucf101 8 38400 5e-5 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh ucf101 4 38400 5e-5 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh ucf101 2 38400 5e-5 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh ucf101 1 38400 5e-5 & \
