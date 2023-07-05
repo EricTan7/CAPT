@@ -95,6 +95,7 @@ def main(args):
     seeds = [1, 2, 3] if cfg.SIMPLE_SEED else [cfg.SEED]
 
     for seed in seeds:
+        cfg.SEED = seed
         output_dir = os.path.join(cfg.OUTPUT_DIR, cfg.DATASET.NAME, cfg.TRAINER.NAME, f"{cfg.MODEL.BACKBONE.NAME.replace('/','-')}_{cfg.DATASET.NUM_SHOTS}shots",
                                   f"lr{cfg.OPTIM.LR}_iter{cfg.OPTIM.MAX_ITER}", f"seed{seed}")
         logger = setup_logger(cfg.TRAINER.NAME, output_dir, if_train=True)
@@ -110,7 +111,7 @@ def main(args):
 
         if seed >= 0:
             # logger.info("Setting fixed seed: {}".format(cfg.SEED))
-            set_random_seed(seed)
+            set_random_seed(cfg.SEED)
 
         if torch.cuda.is_available() and cfg.USE_CUDA:
             torch.backends.cudnn.benchmark = True
