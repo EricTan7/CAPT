@@ -29,4 +29,4 @@ from .baseline_lora import Baseline_caption_wiseft_lora, Baseline_caption_wiseft
 from .baseline_caption_se import Baseline_caption_wiseft_se_pre_all, Baseline_caption_wiseft_se_post, Baseline_caption_wiseft_se_cross, \
     Baseline_caption_wiseft_se_text, Baseline_caption_wiseft_se_text_cross
 
-from .baseline_caption_abla import Baseline_caption_abl_wo_textsup
+from .baseline_caption_abla import Baseline_caption_abl_wo_textsup, Baseline_caption_abl_wo_inssup, Baseline_caption_abl_wo_ctgsup
