@@ -1,3 +1,4 @@
+
 bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh food101 16 38400 2e-5 & \
 
 bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh food101 8 51200 1e-4 & \
