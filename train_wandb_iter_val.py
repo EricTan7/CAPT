@@ -97,7 +97,7 @@ def main(args):
     for seed in seeds:
         cfg.SEED = seed
         output_dir = os.path.join(cfg.OUTPUT_DIR, cfg.DATASET.NAME, cfg.TRAINER.NAME, f"{cfg.MODEL.BACKBONE.NAME.replace('/','-')}_{cfg.DATASET.NUM_SHOTS}shots",
-                                  f"lr{cfg.OPTIM.LR}_iter{cfg.OPTIM.MAX_ITER}", f"seed{seed}")
+                                  f"lr{cfg.OPTIM.LR}_iter{cfg.OPTIM.MAX_ITER}", f"seed{cfg.SEED}")
         logger = setup_logger(cfg.TRAINER.NAME, output_dir, if_train=True)
 
         run = wandb.init(project=args.wandb_proj, config=cfg, tags=["caption_seed"])     # f"abl_caption_wo_{cfg.TRAINER.NAME.split('_')[-1]}"
