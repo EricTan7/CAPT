@@ -98,7 +98,7 @@ def main(args):
                                   f"lr{cfg.OPTIM.LR}_iter{cfg.OPTIM.MAX_ITER}", f"seed{seed}")
         logger = setup_logger(cfg.TRAINER.NAME, output_dir, if_train=True)
 
-        run = wandb.init(project=args.wandb_proj, config=cfg, tags=[f"abl_caption_wo_{cfg.TRAINER.NAME.split('_')[-1]}"],  dir='/data/')     # abl_caption_wo_textsup
+        run = wandb.init(project=args.wandb_proj, config=cfg,tags=["caption_seed"],  dir='/data/')     # abl_caption_wo_textsup
 
         run.name = f'{cfg.MODEL.BACKBONE.NAME}-{cfg.DATASET.NAME}-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-r{cfg.MODEL.LORA.RANK}' \
             f'-a{cfg.MODEL.LORA.ALPHA}-{cfg.MODEL.TEXT.ENCODER}-{cfg.INPUT.TEXT_AUG}' \

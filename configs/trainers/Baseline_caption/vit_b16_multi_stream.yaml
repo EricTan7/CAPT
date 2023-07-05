@@ -38,7 +38,7 @@ MODEL:
   CAPTION: True
 
 TRAINER:
-  NAME: "baseline_caption_wiseft_multi_stream"
+  NAME: "baseline_caption_wiseft_multi_stream_seed"
   PREC: "fp32"
   BASELINE:
     N_CTX: 4

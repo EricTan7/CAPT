@@ -665,3 +665,11 @@ CUDA_VISIBLE_DEVICES=5 python train_wandb_iter_val.py \
 --dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
 --config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption_abl/vit_b16_wo_ctgsup.yaml \
 DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 19200 OPTIM.LR 5e-5
+
+
+# ablation: using 16shots hyper
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh imagenet_wval 16 19200 5e-5 & \
+
+bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh caltech101 16 38400 2e-5 & \
+
+
