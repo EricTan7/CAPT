@@ -2,6 +2,8 @@ import os
 import json
 import argparse
 import numpy as np
+import wandb
+
 
 def average(root):
     # Suppose the save path is:
@@ -33,15 +35,21 @@ def average(root):
                 'test_acc_std': test_acc_std,
                 'test_acc_wiseft_std': test_acc_wiseft_std
             }
+
+            wandb.log({'test_acc_mean': test_acc_mean,
+                'test_acc_wiseft_mean': test_acc_wiseft_mean,
+                'test_acc_std': test_acc_std,
+                'test_acc_wiseft_std': test_acc_wiseft_std})
+
             print(save_dict)
             save_path = os.path.join(hyper_dir, "average.json")
             with open(save_path, "w") as f:
                 json.dump(save_dict, f)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=str, default="/mnt/sdb/tanhao/recognition/", help="path to dataset")
-    args = parser.parse_args()
-
-    average(args.root)
+# if __name__ == '__main__':
+#     parser = argparse.ArgumentParser()
+#     parser.add_argument("--root", type=str, default="/mnt/sdb/tanhao/recognition/", help="path to dataset")
+#     args = parser.parse_args()
+#
+#     average(args.root)

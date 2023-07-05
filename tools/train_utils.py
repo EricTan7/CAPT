@@ -60,6 +60,7 @@ MODELS = {
     'baseline_cattn_wiseft_template_ensemble': Baseline_cattn_wiseft_template_ensemble,
     'baseline_caption_wiseft': Baseline_caption_wiseft,
     'baseline_caption_wiseft_multi_stream': Baseline_caption_wiseft_multi_stream,
+    'baseline_caption_wiseft_multi_stream_seed': Baseline_caption_wiseft_multi_stream,
     'baseline_abla_caption_only': Baseline_abla_caption_only,
     'baseline_abla_multi_wo_caption': Baseline_abla_multi_wo_caption,
     'baseline_caption_wiseft_multi_stream_headval': Baseline_caption_wiseft_multi_stream,
