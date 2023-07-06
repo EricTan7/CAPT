@@ -36,10 +36,10 @@ def average(root):
                 'test_acc_wiseft_std': test_acc_wiseft_std
             }
 
-            wandb.log({'test_acc_mean': test_acc_mean,
-                'test_acc_wiseft_mean': test_acc_wiseft_mean,
-                'test_acc_std': test_acc_std,
-                'test_acc_wiseft_std': test_acc_wiseft_std})
+            # wandb.log({'test_acc_mean': test_acc_mean,
+            #     'test_acc_wiseft_mean': test_acc_wiseft_mean,
+            #     'test_acc_std': test_acc_std,
+            #     'test_acc_wiseft_std': test_acc_wiseft_std})
 
             print(save_dict)
             save_path = os.path.join(hyper_dir, "average.json")
