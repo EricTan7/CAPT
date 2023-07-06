@@ -667,9 +667,15 @@ CUDA_VISIBLE_DEVICES=5 python train_wandb_iter_val.py \
 DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 19200 OPTIM.LR 5e-5
 
 
-# ablation: using 16shots hyper
-bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh imagenet_wval 16 19200 5e-5 & \
+# vit_large
+CUDA_VISIBLE_DEVICES=0 python train_wandb_iter_val.py \
+--dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+--config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_l14.yaml \
+DATASET.NUM_SHOTS ${SHOTS}
 
-bash /home/lijun07/code/CAPT/scripts/baseline/train3.sh caltech101 16 38400 2e-5 & \
+CUDA_VISIBLE_DEVICES=0 WANDB_API_KEY=40afa4ca3f265a034bccdf4e176b2f2254081f21 WANDB_MODE=offline python train_wandb_iter_val.py \
+    --dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+    --config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_b16_multi_stream.yaml \
+    DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 400 OPTIM.LR 1e-4 SIMPLE_SEED True
 
 

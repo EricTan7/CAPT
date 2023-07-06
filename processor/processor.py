@@ -831,10 +831,10 @@ def train_lpclip(cfg, model, data, local_rank):
                     info += [f"eta {eta}"]
                     logger.info(" ".join(info))
 
-        wandb.log({'train loss': loss_meter.avg,
-                   'train acc': acc_meter.avg,
-                   'epoch': epoch
-                   })
+        # wandb.log({'train loss': loss_meter.avg,
+        #            'train acc': acc_meter.avg,
+        #            'epoch': epoch
+        #            })
 
         # 1.update lr
         if cfg.TRAIN.DIST_TRAIN and torch.cuda.device_count() > 1:
@@ -866,8 +866,8 @@ def train_lpclip(cfg, model, data, local_rank):
                     model.set_model_mode("test")
                     results, test_loss = test_clip(cfg, model, data)
                     model.set_model_mode("train")
-                wandb.log({'test acc': results["accuracy"],
-                           'test loss': test_loss})
+                # wandb.log({'test acc': results["accuracy"],
+                #            'test loss': test_loss})
 
 
 def test(cfg, model, data):
@@ -1709,6 +1709,8 @@ def train_caption(cfg, model, data, image_loader, val_loader, test_loader, outpu
     test_path = os.path.join(output_dir, "test.json")
     with open(test_path, 'w') as f:
         json.dump(test_results, f)
+
+    return test_results
 
     # # save the best model
     # sdir = output_dir

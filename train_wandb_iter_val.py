@@ -13,6 +13,7 @@ from tools.utils import set_random_seed, collect_env_info
 from tools.logger import setup_logger
 from tools.train_utils import *
 from average import average
+import numpy as np
 
 import wandb
 import warnings
@@ -93,20 +94,20 @@ def main(args):
     cfg = setup_cfg(args)
     seeds = [1, 2, 3] if cfg.SIMPLE_SEED else [cfg.SEED]
 
+    run = wandb.init(project=args.wandb_proj, config=cfg, tags=["caption_seed"])  # f"abl_caption_wo_{cfg.TRAINER.NAME.split('_')[-1]}"
+
+    run.name = f'{cfg.MODEL.BACKBONE.NAME}-{cfg.DATASET.NAME}-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-r{cfg.MODEL.LORA.RANK}' \
+        f'-a{cfg.MODEL.LORA.ALPHA}-{cfg.MODEL.TEXT.ENCODER}-{cfg.INPUT.TEXT_AUG}' \
+        f'-iter{cfg.OPTIM.MAX_ITER}-lr{cfg.OPTIM.LR}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
+        f'-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
+        f'-{cfg.OPTIM.NAME}-warmit{cfg.OPTIM.WARMUP_ITER}'
+
+    test_acc, test_acc_wiseft = [], []
     for seed in seeds:
         cfg.SEED = seed
         output_dir = os.path.join(cfg.OUTPUT_DIR, cfg.DATASET.NAME, cfg.TRAINER.NAME, f"{cfg.MODEL.BACKBONE.NAME.replace('/','-')}_{cfg.DATASET.NUM_SHOTS}shots",
                                   f"lr{cfg.OPTIM.LR}_iter{cfg.OPTIM.MAX_ITER}", f"seed{cfg.SEED}")
         logger = setup_logger(cfg.TRAINER.NAME, output_dir, if_train=True)
-
-        run = wandb.init(project=args.wandb_proj, config=cfg,tags=["caption_seed"],  dir='/data/')     # abl_caption_wo_textsup
-
-        run.name = f'{cfg.MODEL.BACKBONE.NAME}-{cfg.DATASET.NAME}-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-r{cfg.MODEL.LORA.RANK}' \
-            f'-a{cfg.MODEL.LORA.ALPHA}-{cfg.MODEL.TEXT.ENCODER}-{cfg.INPUT.TEXT_AUG}' \
-            f'-iter{cfg.OPTIM.MAX_ITER}-lr{cfg.OPTIM.LR}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
-            f'-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
-            f'-{cfg.OPTIM.NAME}-warmit{cfg.OPTIM.WARMUP_ITER}-seed{seed}'
-        # run.name = 'all_mlp_lora'
 
         if seed >= 0:
             # logger.info("Setting fixed seed: {}".format(cfg.SEED))
@@ -140,22 +141,41 @@ def main(args):
         elif 'fixedfirst' in cfg.TRAINER.NAME:
             train_wandb_iter_wiseft_val_fixedfirst(cfg, model, data, image_loader, val_loader, test_loader, output_dir, args.local_rank)
         elif "caption" in cfg.TRAINER.NAME:
-            train_caption(cfg, model, data, image_loader, val_loader, test_loader, output_dir, args.local_rank)
+            result = train_caption(cfg, model, data, image_loader, val_loader, test_loader, output_dir, args.local_rank)
             # inference(cfg, model, data, image_loader, val_loader, test_loader, output_dir, args.local_rank)
         elif ("wiseft" in cfg.TRAINER.NAME) or ("sattn" in cfg.TRAINER.NAME):
             train_wandb_iter_wiseft_val(cfg, model, data, image_loader, val_loader, test_loader, output_dir, args.local_rank)
         else:
             train_wandb_iter(cfg, model, data, args.local_rank)
 
+        test_acc.append(result["test acc"])
+        test_acc_wiseft.append(result["test acc (wiseft_0.5)"])
+
+        if cfg.SIMPLE_SEED and seed < 3:
+            logger.handlers.clear()
+
+    if cfg.SIMPLE_SEED:
+        test_acc_mean = np.mean(test_acc)
+        test_acc_wiseft_mean = np.mean(test_acc_wiseft)
+        test_acc_std = np.std(test_acc)
+        test_acc_wiseft_std = np.std(test_acc_wiseft)
+
+        average_res = {'test_acc_mean': test_acc_mean,
+                   'test_acc_wiseft_mean': test_acc_wiseft_mean,
+                   'test_acc_std': test_acc_std,
+                   'test_acc_wiseft_std': test_acc_wiseft_std}
+        wandb.log(average_res)
+        logger.info(average_res)
+
     # average across seeds: mean, std
-    if len(seeds) > 1:
-        average(os.path.join(cfg.OUTPUT_DIR, cfg.DATASET.NAME, cfg.TRAINER.NAME))
+    # if len(seeds) > 1:
+    #     average(os.path.join(cfg.OUTPUT_DIR, cfg.DATASET.NAME, cfg.TRAINER.NAME))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=str, default="/data/datasets", help="path to dataset")
-    parser.add_argument("--output-dir", type=str, default="/data/output/TGPT", help="output directory")
+    parser.add_argument("--output-dir", type=str, default="/data/output/TGPT/seed", help="output directory")
     parser.add_argument(
         "--resume",
         type=str,
