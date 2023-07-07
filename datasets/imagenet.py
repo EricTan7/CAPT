@@ -16,7 +16,10 @@ class ImageNet(Benchmark):
         self.dataset_dir = os.path.join(root, self.dataset_dir)
         self.image_dir = os.path.join(self.dataset_dir, "images")
         self.preprocessed = os.path.join(self.dataset_dir, "preprocessed.pkl")      # followed CoOp, dont have val set
-        self.tokenizer = BertTokenizer.from_pretrained(cfg.MODEL.TEXT.ENCODER)
+        if "bert" in cfg.TRAINER.NAME:
+            self.tokenizer = BertTokenizer.from_pretrained(cfg.MODEL.TEXT.ENCODER)  # 'bert-base-uncased'
+        elif "t5" in cfg.TRAINER.NAME:
+            self.tokenizer = T5Tokenizer.from_pretrained(cfg.MODEL.TEXT.ENCODER)
         if cfg.MODEL.CAPTION:
             if "bert" in cfg.TRAINER.NAME:
                 self.split_fewshot_dir = os.path.join(self.dataset_dir, f"split_fewshot_caption_{cfg.MODEL.TEXT.ENCODER}")

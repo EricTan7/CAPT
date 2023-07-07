@@ -668,14 +668,24 @@ DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 19200 OPTIM.LR 5e-5
 
 
 # vit_large
-CUDA_VISIBLE_DEVICES=0 python train_wandb_iter_val.py \
+CUDA_VISIBLE_DEVICES=0 WANDB_API_KEY=40afa4ca3f265a034bccdf4e176b2f2254081f21 WANDB_MODE=offline python train_wandb_iter_val.py \
 --dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
 --config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_l14.yaml \
-DATASET.NUM_SHOTS ${SHOTS}
+DATASET.NUM_SHOTS 16
 
 CUDA_VISIBLE_DEVICES=0 WANDB_API_KEY=40afa4ca3f265a034bccdf4e176b2f2254081f21 WANDB_MODE=offline python train_wandb_iter_val.py \
     --dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
     --config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_b16_multi_stream.yaml \
     DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 400 OPTIM.LR 1e-4 SIMPLE_SEED True
 
+for seed in 2 3
+do
+    for shots in 16 8 4 2 1
+    do
+        WANDB_API_KEY=40afa4ca3f265a034bccdf4e176b2f2254081f21 WANDB_MODE=offline python train_wandb_iter_val.py \
+        --dataset-config-file /data/run01/scz0bkt/code/Baseline/configs/datasets/imagenet.yaml \
+        --config-file /data/run01/scz0bkt/code/Baseline/configs/trainers/Baseline_cattn_vocabloss/vit_b16_batch32.yaml \
+        DATASET.NUM_SHOTS ${SHOTS} SEED ${seed}
+    done
+done
 
