@@ -1,66 +1,182 @@
 import argparse
 import torch
 import torch.distributed as dist
+import os
 
-from datasets import DataManager
-from processor import train_wandb, train_lpclip, train_wandb_two_stage
+from datasets import DataManager, TensorDataset
+from torch.utils.data import DataLoader
+from processor import train_wandb, train_lpclip, \
+    train_wandb_two_stage, train_wandb_iter, \
+    train_wandb_iter_wiseft, train_wandb_iter_wiseft_val, \
+    train_caption, train_wandb_iter_wiseft_val_fixedfirst, inference
 from tools.utils import set_random_seed, collect_env_info
 from tools.logger import setup_logger
 from tools.train_utils import *
+from average import average
+import numpy as np
 
 import wandb
 import warnings
 warnings.filterwarnings("ignore")
 
 
+dataset_name = {
+    "OxfordPets": "oxford_pets",
+    "OxfordFlowers": "oxford_flowers",
+    "FGVCAircraft": "fgvc_aircraft",
+    "DescribableTextures": "dtd",
+    "EuroSAT": "eurosat",
+    "StanfordCars": "stanford_cars",
+    "Food101": "food101",
+    "SUN397": "sun397",
+    "Caltech101": "caltech101",
+    "UCF101": "ucf101",
+    "ImageNet": "imagenet",
+    "ImageNetV2": "imagenetv2",
+    "ImageNetSketch": "imagenet_sketch",
+    "ImageNetA": "imagenet_a",
+    "ImageNetR": "imagenet_r"
+}
+
+
+def getModelSize(model, logger):
+    param_size = 0
+    param_sum = 0
+    grad_param_size = 0
+    grad_param_sum = 0
+    grad_param_size_bonder, grad_param_size_fc, grad_param_size_lora = 0, 0, 0
+    grad_param_sum_bonder, grad_param_sum_fc, grad_param_sum_lora = 0, 0, 0
+
+    name_to_cal = ["prompt_learner", "cls_head", "lora"]
+
+    for name, param in model.named_parameters():
+        param_size += param.nelement() * param.element_size()
+        param_sum += param.nelement()
+        if param.requires_grad == True:
+            grad_param_size += param.nelement() * param.element_size()
+            grad_param_sum += param.nelement()
+
+        if name_to_cal[0] in name:
+            if param.requires_grad:
+                grad_param_size_bonder += param.nelement() * param.element_size()
+                grad_param_sum_bonder += param.nelement()
+        elif name_to_cal[1] in name:
+            if param.requires_grad:
+                grad_param_size_fc += param.nelement() * param.element_size()
+                grad_param_sum_fc += param.nelement()
+        elif name_to_cal[2] in name:
+            if param.requires_grad:
+                grad_param_size_lora += param.nelement() * param.element_size()
+                grad_param_sum_lora += param.nelement()
+        else:
+            if param.requires_grad:
+                print(name)
+    buffer_size = 0
+    buffer_sum = 0
+    for buffer in model.buffers():
+        buffer_size += buffer.nelement() * buffer.element_size()
+        buffer_sum += buffer.nelement()
+    all_size = (param_size + buffer_size) / 1024 / 1024
+
+    logger.info('total number of params: {:.2f} M'.format(param_sum/ 1000000))
+    logger.info('total size of params: {:.2f}MB'.format(param_size / 1024 / 1024))
+    logger.info('trainable number of params: {:.2f} M'.format(grad_param_sum/ 1000000))
+    logger.info('trainable size of params: {:.2f}MB'.format(grad_param_size/1024/1024))
+    logger.info('trainable params proportion: {:.2%}'.format(grad_param_sum/param_sum))
+    logger.info('buffer params: {:.2f} M'.format(buffer_sum / 1000000))
+    logger.info('trainable bonder: {:.2f} M'.format(grad_param_sum_bonder/ 1000000))
+    logger.info('trainable fc: {:.2f} M'.format(grad_param_sum_fc/ 1000000))
+    logger.info('trainable lora: {:.2f} M'.format(grad_param_sum_lora/ 1000000))
+
+    return (param_size, param_sum, grad_param_size)
+
+
 def main(args):
     cfg = setup_cfg(args)
-    logger = setup_logger(cfg.TRAINER.NAME, cfg.OUTPUT_DIR, if_train=True)
+    seeds = [1, 2, 3] if cfg.SIMPLE_SEED else [cfg.SEED]
 
-    # run = wandb.init(project='baseline_cattn_vocabloss')
-    # run = wandb.init(project='baseline_cattn(_vocabloss)_sweep')
-    # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
-    # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.OPTIM.NAME}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
-    # run = wandb.init(project='lpsam')
-    # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s'
-    # run.name = 'vitb16-' + cfg.DATASET.NAME + f'-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-{cfg.INPUT.NUM_VIEWS}v-{cfg.OPTIM.NAME}-lr{cfg.OPTIM.LR}-e{cfg.OPTIM.MAX_EPOCH}'
+    # run = wandb.init(project=args.wandb_proj, config=cfg, tags=["caption_seed"])  # f"abl_caption_wo_{cfg.TRAINER.NAME.split('_')[-1]}"
+    #
+    # run.name = f'{cfg.MODEL.BACKBONE.NAME}-{cfg.DATASET.NAME}-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-r{cfg.MODEL.LORA.RANK}' \
+    #     f'-a{cfg.MODEL.LORA.ALPHA}-{cfg.MODEL.TEXT.ENCODER}-{cfg.INPUT.TEXT_AUG}' \
+    #     f'-iter{cfg.OPTIM.MAX_ITER}-lr{cfg.OPTIM.LR}-bs{cfg.DATALOADER.TRAIN_X.BATCH_SIZE}' \
+    #     f'-dp{cfg.MODEL.BONDER.DEPTH}-q{cfg.MODEL.BONDER.NUM_Q}' \
+    #     f'-{cfg.OPTIM.NAME}-warmit{cfg.OPTIM.WARMUP_ITER}'
 
-    if cfg.SEED >= 0:
-        logger.info("Setting fixed seed: {}".format(cfg.SEED))
-        set_random_seed(cfg.SEED)
+    test_acc, test_acc_wiseft = [], []
+    for seed in seeds:
+        cfg.SEED = seed
+        output_dir = os.path.join(cfg.OUTPUT_DIR, cfg.DATASET.NAME, cfg.TRAINER.NAME, f"{cfg.MODEL.BACKBONE.NAME.replace('/','-')}_{cfg.DATASET.NUM_SHOTS}shots",
+                                  f"lr{cfg.OPTIM.LR}_iter{cfg.OPTIM.MAX_ITER}", f"seed{cfg.SEED}")
+        logger = setup_logger(cfg.TRAINER.NAME, output_dir, if_train=True)
 
-    if torch.cuda.is_available() and cfg.USE_CUDA:
-        torch.backends.cudnn.benchmark = True
+        if seed >= 0:
+            # logger.info("Setting fixed seed: {}".format(cfg.SEED))
+            set_random_seed(cfg.SEED)
 
-    if cfg.TRAIN.DIST_TRAIN:
-        torch.cuda.set_device(args.local_rank)
-        dist.init_process_group(backend='nccl', init_method='env://')
+        if torch.cuda.is_available() and cfg.USE_CUDA:
+            torch.backends.cudnn.benchmark = True
 
-    if cfg.TRAIN.DIST_TRAIN and dist.get_rank() != 0:
-        pass
-    else:
-        print_args(args, cfg)
-        logger.info("Collecting env info ...")
-        logger.info("** System info **\n{}\n".format(collect_env_info()))
+        if cfg.TRAIN.DIST_TRAIN:
+            torch.cuda.set_device(args.local_rank)
+            dist.init_process_group(backend='nccl', init_method='env://')
 
-    # 1.dataset
-    data = DataManager(cfg)
+        # 1.dataset
+        data = DataManager(cfg)
 
-    model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
+    #     # 2.model ( +optim +sche)
+    #     model = MODELS[cfg.TRAINER.NAME](cfg, data.dataset.classnames)
+    #
+    #     image_loader = data.train_loader
+    #     val_loader = data.val_loader
+    #     test_loader = data.test_loader
+    #
+    #     # logger.info("Trainable params statistics")
+    #     # getModelSize(model, logger)
+    #
+    #     # 3.train
+    #     if cfg.TRAINER.NAME in ["lpclip", "lpsam"]:
+    #         train_lpclip(cfg, model, data, args.local_rank)
+    #     elif cfg.TRAINER.NAME in ["baseline_cattn_vocabloss_shembed_zsinit_fixedfirst"]:
+    #         train_wandb_two_stage(cfg, model, data, args.local_rank)
+    #     elif 'fixedfirst' in cfg.TRAINER.NAME:
+    #         train_wandb_iter_wiseft_val_fixedfirst(cfg, model, data, image_loader, val_loader, test_loader, output_dir, args.local_rank)
+    #     elif "caption" in cfg.TRAINER.NAME:
+    #         result = train_caption(cfg, model, data, image_loader, val_loader, test_loader, output_dir, args.local_rank)
+    #         # inference(cfg, model, data, image_loader, val_loader, test_loader, output_dir, args.local_rank)
+    #     elif ("wiseft" in cfg.TRAINER.NAME) or ("sattn" in cfg.TRAINER.NAME):
+    #         train_wandb_iter_wiseft_val(cfg, model, data, image_loader, val_loader, test_loader, output_dir, args.local_rank)
+    #     else:
+    #         train_wandb_iter(cfg, model, data, args.local_rank)
+    #
+    #     test_acc.append(result["test acc"])
+    #     test_acc_wiseft.append(result["test acc (wiseft_0.5)"])
+    #
+    #     if cfg.SIMPLE_SEED and seed < 3:
+    #         logger.handlers.clear()
+    #
+    # if cfg.SIMPLE_SEED:
+    #     test_acc_mean = np.mean(test_acc)
+    #     test_acc_wiseft_mean = np.mean(test_acc_wiseft)
+    #     test_acc_std = np.std(test_acc)
+    #     test_acc_wiseft_std = np.std(test_acc_wiseft)
+    #
+    #     average_res = {'test_acc_mean': test_acc_mean,
+    #                'test_acc_wiseft_mean': test_acc_wiseft_mean,
+    #                'test_acc_std': test_acc_std,
+    #                'test_acc_wiseft_std': test_acc_wiseft_std}
+    #     wandb.log(average_res)
+    #     logger.info(average_res)
 
-    # 3.train
-    if cfg.TRAINER.NAME in ["lpclip", "lpsam"]:
-        train_lpclip(cfg, model, data, args.local_rank)
-    elif cfg.TRAINER.NAME in ["baseline_cattn_vocabloss_shembed_zsinit_fixedfirst"]:
-        train_wandb_two_stage(cfg, model, data, args.local_rank)
-    else:
-        train_wandb(cfg, model, data, args.local_rank)
+    # average across seeds: mean, std
+    # if len(seeds) > 1:
+    #     average(os.path.join(cfg.OUTPUT_DIR, cfg.DATASET.NAME, cfg.TRAINER.NAME))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--root", type=str, default="", help="path to dataset")
-    parser.add_argument("--output-dir", type=str, default="", help="output directory")
+    parser.add_argument("--root", type=str, default="/mnt/sdb/tanhao/recognition/", help="path to dataset")
+    parser.add_argument("--output-dir", type=str, default="/mnt/nas/TrueNas1/tanhao/logs/TGPT/seed", help="output directory")
     parser.add_argument(
         "--resume",
         type=str,
@@ -72,7 +188,7 @@ if __name__ == "__main__":
         "--dist-train", type=bool, default=False, help="path to config file"
     )
     parser.add_argument(
-        "--seed", type=int, default=-1, help="only positive value enables a fixed seed"
+        "--seed", type=int, default=1, help="only positive value enables a fixed seed"
     )
     parser.add_argument(
         "--source-domains", type=str, nargs="+", help="source domains for DA/DG"
@@ -113,6 +229,9 @@ if __name__ == "__main__":
         default=None,
         nargs=argparse.REMAINDER,
         help="modify config options using the command-line",
+    )
+    parser.add_argument(
+        "--wandb-proj", type=str, default="baseline_caption", help="project name of wandb"
     )
     args = parser.parse_args()
     main(args)
