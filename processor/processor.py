@@ -1643,7 +1643,8 @@ def train_caption(cfg, model, data, image_loader, val_loader, test_loader, outpu
         #     test_freq = cfg.TRAIN.TEST_FREQ * 4
 
         # 3.meet epoch: do test
-        if (iters % cfg.TRAIN.TEST_FREQ == 0) or iters == 1:
+        # if (iters % cfg.TRAIN.TEST_FREQ == 0) or iters == 1:
+        if (iters % cfg.TRAIN.TEST_FREQ == 0):
             if cfg.TRAIN.DIST_TRAIN and dist.get_rank() != 0:
                 pass
             else:
