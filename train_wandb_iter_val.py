@@ -94,7 +94,7 @@ def main(args):
     cfg = setup_cfg(args)
     seeds = [1, 2, 3] if cfg.SIMPLE_SEED else [cfg.SEED]
 
-    run = wandb.init(project=args.wandb_proj, config=cfg, tags=["caption_vitl"], dir='/data/wandb/0708')  # f"abl_caption_wo_{cfg.TRAINER.NAME.split('_')[-1]}"
+    run = wandb.init(project=args.wandb_proj, config=cfg, tags=[f"abl_caption_vitl_wo_{cfg.TRAINER.NAME.split('_')[-1]}"], dir='/data/wandb/0708')  # f"abl_caption_wo_{cfg.TRAINER.NAME.split('_')[-1]}"
 
     run.name = f'{cfg.MODEL.BACKBONE.NAME}-{cfg.DATASET.NAME}-{cfg.DATASET.NUM_SHOTS}s-{cfg.TRAINER.NAME}-r{cfg.MODEL.LORA.RANK}' \
         f'-a{cfg.MODEL.LORA.ALPHA}-{cfg.MODEL.TEXT.ENCODER}-{cfg.INPUT.TEXT_AUG}' \
