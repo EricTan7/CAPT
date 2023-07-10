@@ -674,9 +674,9 @@ CUDA_VISIBLE_DEVICES=0 WANDB_API_KEY=40afa4ca3f265a034bccdf4e176b2f2254081f21 WA
 DATASET.NUM_SHOTS 16
 
 CUDA_VISIBLE_DEVICES=0 WANDB_API_KEY=40afa4ca3f265a034bccdf4e176b2f2254081f21 WANDB_MODE=offline python train_wandb_iter_val.py \
-    --dataset-config-file /home/tanhao/Baseline/configs/datasets/fgvc_aircraft.yaml \
+    --dataset-config-file /home/tanhao/Baseline/configs/datasets/imagenet_wval.yaml \
     --config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_b16_multi_stream.yaml \
-    DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 400 OPTIM.LR 1e-4 SIMPLE_SEED True
+    DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 12800 OPTIM.LR 1e-4
 
 for seed in 2 3
 do
@@ -689,3 +689,10 @@ do
     done
 done
 
+# for DATASET in fgvc_aircraft dtd eurosat food101 caltech101 ucf101 oxford_flowers oxford_pets stanford_cars imagenet
+    --root /mnt/nas/TrueNas1/tanhao/recognition/ \
+CUDA_VISIBLE_DEVICES=7 WANDB_API_KEY=40afa4ca3f265a034bccdf4e176b2f2254081f21 WANDB_MODE=offline python train_wandb_iter_val.py \
+    --dataset-config-file /home/tanhao/Baseline/configs/datasets/dtd.yaml \
+    --config-file /home/tanhao/Baseline/configs/trainers/Baseline_caption/vit_b16_multi_stream.yaml \
+    DATASET.NUM_SHOTS 16 OPTIM.MAX_ITER 12800 OPTIM.LR 1e-4 \
+    DATALOADER.TRAIN_X.BATCH_SIZE 8 TRAIN.TEST_FREQ 12800 MODEL.BONDER.NUM_Q 32
