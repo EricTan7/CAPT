@@ -30,3 +30,4 @@ from .baseline_caption_se import Baseline_caption_wiseft_se_pre_all, Baseline_ca
     Baseline_caption_wiseft_se_text, Baseline_caption_wiseft_se_text_cross
 
 from .baseline_caption_abla import Baseline_caption_abl_wo_textsup, Baseline_caption_abl_wo_inssup, Baseline_caption_abl_wo_ctgsup
+from .baseline_caption_abla_loss import Baseline_caption_abl_embedloss, Baseline_caption_abl_encoderloss
